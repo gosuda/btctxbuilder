@@ -62,7 +62,6 @@ func RequestGet[T any](client *Client, endpoint string) (T, error) {
 
 	var result T
 	if json.Valid(body) {
-		fmt.Println(string(body))
 		if err := json.Unmarshal(body, &result); err != nil {
 			return *new(T), fmt.Errorf("failed to unmarshal response: %w", err)
 		}
