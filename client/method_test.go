@@ -59,7 +59,7 @@ func TestBroadCastTx(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println(rawTx)
 
-	hash, err := client.BroadCastTx(tx)
+	hash, err := client.BroadcastTx(tx)
 	require.NoError(t, err)
 	fmt.Println("hash:", hash)
 }

@@ -35,6 +35,6 @@ func (c *Client) GetUTXO(address string) ([]*Utxo, error) {
 	return RequestGet[[]*Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }
 
-func (c *Client) BroadCastTx(rawTx string) (string, error) {
+func (c *Client) BroadcastTx(rawTx string) (string, error) {
 	return RequestPost[string](c, "/tx", rawTx)
 }
