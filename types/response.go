@@ -37,6 +37,10 @@ type Vin struct {
 	Witness      []string `json:"witness"`
 	IsCoinbase   bool     `json:"is_coinbase"`
 	Sequence     int64    `json:"sequence"`
+
+	// calculated fields
+	Amount  int64  `json:"-"`
+	Address string `json:"-"`
 }
 
 type Vout struct {
@@ -45,6 +49,11 @@ type Vout struct {
 	ScriptpubkeyType    string `json:"scriptpubkey_type"`
 	ScriptpubkeyAddress string `json:"scriptpubkey_address,omitempty"`
 	Value               int    `json:"value"`
+
+	// calculated fields
+	Amount    int64  `json:"-"`
+	Address   string `json:"-"`
+	PublicKey string `json:"-"`
 }
 
 type Utxo struct {
