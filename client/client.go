@@ -99,17 +99,16 @@ func RequestPost[T any](client *Client, endpoint string, payload interface{}) (T
 	}
 
 	var result T
+	if _, ok := any(result).(string); ok {
+		return any(string(body)).(T), nil
+	}
 	if json.Valid(body) {
 		if err := json.Unmarshal(body, &result); err != nil {
 			return *new(T), fmt.Errorf("failed to unmarshal response: %w", err)
 		}
-	} else {
-		// Non-JSON response, only supported for strings
-		if _, ok := any(result).(string); ok {
-			result = any(string(body)).(T)
-		} else {
-			return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T", result)
-		}
+		return result, nil
 	}
-	return result, nil
+
+	// Non-JSON response, only supported for strings
+	return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T", result)
 }
