@@ -11,23 +11,27 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
+const (
+	// https://github.com/blockstream/esplora/blob/master/API.md
+	ClientURL = "https://blockstream.info"
+)
+
 func NewClient(net types.Network) *Client {
 	client := &Client{
 		http:   http.DefaultClient,
 		params: types.GetParams(net),
 	}
 
-	client.url = "https://blockstream.info"
 	switch net {
 	case types.BTC:
 		client.params = &chaincfg.MainNetParams
-		client.url = client.url + "/api"
+		client.url = ClientURL + "/api"
 	case types.BTC_Testnet3:
 		client.params = &chaincfg.RegressionNetParams
-		client.url = client.url + "/testnet/api"
+		client.url = ClientURL + "/testnet/api"
 	case types.BTC_Signet:
 		client.params = &chaincfg.SigNetParams
-		client.url = client.url + "/signet/api"
+		client.url = ClientURL + "/signet/api"
 	}
 
 	return client
@@ -61,19 +65,18 @@ func RequestGet[T any](client *Client, endpoint string) (T, error) {
 	}
 
 	var result T
+	if _, ok := any(result).(string); ok {
+		return any(string(body)).(T), nil
+	}
 	if json.Valid(body) {
 		if err := json.Unmarshal(body, &result); err != nil {
 			return *new(T), fmt.Errorf("failed to unmarshal response: %w", err)
 		}
-	} else {
-		// Non-JSON response, only supported for strings
-		if _, ok := any(result).(string); ok {
-			result = any(string(body)).(T)
-		} else {
-			return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T", result)
-		}
+		return result, nil
 	}
-	return result, nil
+
+	// Non-JSON response, only supported for strings
+	return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T", result)
 }
 
 func RequestPost[T any](client *Client, endpoint string, payload interface{}) (T, error) {

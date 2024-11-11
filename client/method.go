@@ -37,6 +37,10 @@ func (c *Client) GetUTXO(address string) ([]*types.Utxo, error) {
 	return RequestGet[[]*types.Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }
 
+func (c *Client) FeeEstimate() (types.FeeEstimate, error) {
+	return RequestGet[types.FeeEstimate](c, "/fee-estimates")
+}
+
 func (c *Client) BroadcastTx(rawTx string) (string, error) {
 	return RequestPost[string](c, "/tx", rawTx)
 }

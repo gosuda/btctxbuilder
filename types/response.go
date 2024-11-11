@@ -60,3 +60,5 @@ type BlockStatus struct {
 	BlockHash   string `json:"block_hash"`
 	BlockTime   int    `json:"block_time"`
 }
+
+type FeeEstimate map[string]float64
