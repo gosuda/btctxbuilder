@@ -8,23 +8,24 @@ import (
 	"net/http"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func NewClient(net Network) *Client {
+func NewClient(net types.Network) *Client {
 	client := &Client{
-		net:  net,
-		http: http.DefaultClient,
+		http:   http.DefaultClient,
+		params: types.GetParams(net),
 	}
 
 	client.url = "https://blockstream.info"
 	switch net {
-	case Mainnet:
+	case types.BTC:
 		client.params = &chaincfg.MainNetParams
 		client.url = client.url + "/api"
-	case Regtest:
+	case types.BTC_Testnet3:
 		client.params = &chaincfg.RegressionNetParams
 		client.url = client.url + "/testnet/api"
-	case Signet:
+	case types.BTC_Signet:
 		client.params = &chaincfg.SigNetParams
 		client.url = client.url + "/signet/api"
 	}
@@ -33,7 +34,6 @@ func NewClient(net Network) *Client {
 }
 
 type Client struct {
-	net    Network
 	params *chaincfg.Params
 	url    string
 

@@ -1,6 +1,8 @@
 package types
 
 import (
+	"log"
+
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/base58"
@@ -27,22 +29,27 @@ var (
 )
 
 func init() {
-	netParams = make(map[Network]*chaincfg.Params)
-	netParams[BTC] = getBTCMainNetParams()
-	netParams[BTC_Testnet3] = getBTCTestNetParams()
-	netParams[BTC_Regressionnet] = getBTCRegresstionNetParams()
-	netParams[BTC_Signet] = getBTCSignetParams()
+	netParams = map[Network]*chaincfg.Params{
+		BTC:               getBTCMainNetParams(),
+		BTC_Testnet3:      getBTCTestNetParams(),
+		BTC_Regressionnet: getBTCRegresstionNetParams(),
+		BTC_Signet:        getBTCSignetParams(),
 
-	netParams[DGB] = getDGBMainNetParams()
-	netParams[QTUM] = getQTUMMainNetParams()
-	netParams[RVN] = getRVNMainNetParams()
-	netParams[BTG] = getBTGMainNetParams()
-	netParams[BCH] = getBCHmainNetParams()
-	netParams[DOGE] = getDOGEMainNetParams()
+		DGB:  getDGBMainNetParams(),
+		QTUM: getQTUMMainNetParams(),
+		RVN:  getRVNMainNetParams(),
+		BTG:  getBTGMainNetParams(),
+		BCH:  getBCHmainNetParams(),
+		DOGE: getDOGEMainNetParams(),
+	}
 }
 
 func GetParams(net Network) *chaincfg.Params {
-	return netParams[net]
+	if param, ok := netParams[net]; ok {
+		return param
+	}
+	log.Fatalf("network not supported [%s]", net)
+	return nil
 }
 
 // getBTCMainNetParams BTC
