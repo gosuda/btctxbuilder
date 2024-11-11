@@ -2,7 +2,7 @@ package types
 
 type Block struct {
 	ID                string  `json:"id"`
-	Height            int     `json:"height"`
+	Height            uint64  `json:"height"`
 	Version           int     `json:"version"`
 	Timestamp         int     `json:"timestamp"`
 	TxCount           int     `json:"tx_count"`
@@ -30,7 +30,7 @@ type Transaction struct {
 
 type Vin struct {
 	Txid         string   `json:"txid"`
-	Vout         int64    `json:"vout"`
+	Vout         uint32   `json:"vout"`
 	Prevout      any      `json:"prevout"`
 	Scriptsig    string   `json:"scriptsig"`
 	ScriptsigAsm string   `json:"scriptsig_asm"`
@@ -48,7 +48,7 @@ type Vout struct {
 	ScriptpubkeyAsm     string `json:"scriptpubkey_asm"`
 	ScriptpubkeyType    string `json:"scriptpubkey_type"`
 	ScriptpubkeyAddress string `json:"scriptpubkey_address,omitempty"`
-	Value               int    `json:"value"`
+	Value               int64  `json:"value"`
 
 	// calculated fields
 	Amount    int64  `json:"-"`
@@ -58,9 +58,9 @@ type Vout struct {
 
 type Utxo struct {
 	Txid   string      `json:"txid"`
-	Vout   int         `json:"vout"`
+	Vout   uint32      `json:"vout"`
 	Status BlockStatus `json:"status"`
-	Value  int         `json:"value"`
+	Value  int64       `json:"value"`
 }
 
 type BlockStatus struct {

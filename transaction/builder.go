@@ -18,14 +18,21 @@ type TxBuilder struct {
 }
 
 func NewTxBuilder(cfg *chaincfg.Params, client *client.Client) *TxBuilder {
-	version := wire.TxVersion
 	return &TxBuilder{
-		version: version,
+		version: wire.TxVersion,
 		params:  cfg,
 		client:  client,
 	}
 }
 
-func (tx *TxBuilder) Build() (*psbt.Packet, error) {
-	return nil, nil
+func (t *TxBuilder) Build() (*psbt.Packet, error) {
+	outpoints, nSequences, err := t.inputs.ToWire()
+	if err != nil {
+		return nil, err
+	}
+	outputs, err := t.outputs.ToWire()
+	if err != nil {
+		return nil, err
+	}
+	return psbt.New(outpoints, outputs, int32(t.version), 0, nSequences)
 }
