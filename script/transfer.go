@@ -8,7 +8,6 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-// SingleSig
 func EncodeTransferScript(network types.Network, address string) ([]byte, error) {
 	addr, err := btcutil.DecodeAddress(address, types.GetParams(network))
 	if err != nil {
