@@ -1,4 +1,4 @@
-package transaction
+package types
 
 import (
 	"github.com/btcsuite/btcd/btcutil"
@@ -6,21 +6,64 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 )
 
+type Network string
+
 const (
-	zecNet = 0x6427e924
+	BTC               Network = "btc"
+	BTC_Testnet3      Network = "btc-testnet3"
+	BTC_Regressionnet Network = "btc-regtest"
+	BTC_Signet        Network = "btc-signet"
+
+	DGB  Network = "dgb"  // digibyte
+	QTUM Network = "qtum" // qtum
+	RVN  Network = "rvn"  // raven
+	BTG  Network = "btg"  // bitcoin gold
+	BCH  Network = "bch"  // bitcoin cash
+	DOGE Network = "doge" // dogecoin
 )
 
-// GetBTCMainNetParams BTC
-func GetBTCMainNetParams() *chaincfg.Params {
+var (
+	netParams = map[Network]*chaincfg.Params{}
+)
+
+func init() {
+	netParams = make(map[Network]*chaincfg.Params)
+	netParams[BTC] = getBTCMainNetParams()
+	netParams[BTC_Testnet3] = getBTCTestNetParams()
+	netParams[BTC_Regressionnet] = getBTCRegresstionNetParams()
+	netParams[BTC_Signet] = getBTCSignetParams()
+
+	netParams[DGB] = getDGBMainNetParams()
+	netParams[QTUM] = getQTUMMainNetParams()
+	netParams[RVN] = getRVNMainNetParams()
+	netParams[BTG] = getBTGMainNetParams()
+	netParams[BCH] = getBCHmainNetParams()
+	netParams[DOGE] = getDOGEMainNetParams()
+}
+
+func GetParams(net Network) *chaincfg.Params {
+	return netParams[net]
+}
+
+// getBTCMainNetParams BTC
+func getBTCMainNetParams() *chaincfg.Params {
 	return &chaincfg.MainNetParams
 }
 
-func GetBTCTestNetParams() *chaincfg.Params {
+func getBTCTestNetParams() *chaincfg.Params {
 	return &chaincfg.TestNet3Params
 }
 
-// GetDGBMainNetParams DGB
-func GetDGBMainNetParams() *chaincfg.Params {
+func getBTCRegresstionNetParams() *chaincfg.Params {
+	return &chaincfg.RegressionNetParams
+}
+
+func getBTCSignetParams() *chaincfg.Params {
+	return &chaincfg.SigNetParams
+}
+
+// getDGBMainNetParams DGB
+func getDGBMainNetParams() *chaincfg.Params {
 	params := chaincfg.MainNetParams
 	params.Net = 0xdab6c3fa
 
@@ -32,7 +75,7 @@ func GetDGBMainNetParams() *chaincfg.Params {
 }
 
 // GetQTUMMainNetParams QTUM
-func GetQTUMMainNetParams() *chaincfg.Params {
+func getQTUMMainNetParams() *chaincfg.Params {
 	params := chaincfg.MainNetParams
 	params.Net = 0xf1cfa6d3
 
@@ -44,8 +87,8 @@ func GetQTUMMainNetParams() *chaincfg.Params {
 	return &params
 }
 
-// GetRVNMainNetParams RVN
-func GetRVNMainNetParams() *chaincfg.Params {
+// getRVNMainNetParams RVN
+func getRVNMainNetParams() *chaincfg.Params {
 	params := chaincfg.MainNetParams
 	params.Net = 0x4e564152
 
@@ -55,8 +98,8 @@ func GetRVNMainNetParams() *chaincfg.Params {
 	return &params
 }
 
-// GetBTGMainNetParams BTG
-func GetBTGMainNetParams() *chaincfg.Params {
+// getBTGMainNetParams BTG
+func getBTGMainNetParams() *chaincfg.Params {
 	mainnetparams := chaincfg.MainNetParams
 	mainnetparams.Net = 0x446d47e1
 
@@ -72,8 +115,8 @@ func GetBTGMainNetParams() *chaincfg.Params {
 	return &mainnetparams
 }
 
-// GetBCHmainNetParams BCH
-func GetBCHmainNetParams() *chaincfg.Params {
+// getBCHmainNetParams BCH
+func getBCHmainNetParams() *chaincfg.Params {
 	mainNetParams := chaincfg.MainNetParams
 	mainNetParams.Net = 0xe8f3e1e3
 
@@ -83,8 +126,8 @@ func GetBCHmainNetParams() *chaincfg.Params {
 	return &mainNetParams
 }
 
-// GetLTCMainNetParams LTC
-func GetLTCMainNetParams() *chaincfg.Params {
+// getLTCMainNetParams LTC
+func getLTCMainNetParams() *chaincfg.Params {
 	mainNetParams := chaincfg.MainNetParams
 	mainNetParams.Net = 0xdbb6c0fb
 
@@ -95,8 +138,8 @@ func GetLTCMainNetParams() *chaincfg.Params {
 	return &mainNetParams
 }
 
-// GetDASHMainNetParams DASH
-func GetDASHMainNetParams() *chaincfg.Params {
+// getDASHMainNetParams DASH
+func getDASHMainNetParams() *chaincfg.Params {
 	mainNetParams := chaincfg.MainNetParams
 	mainNetParams.Net = 0xbd6b0cbf
 
@@ -106,8 +149,8 @@ func GetDASHMainNetParams() *chaincfg.Params {
 	return &mainNetParams
 }
 
-// GetDOGEMainNetParams DOGE
-func GetDOGEMainNetParams() *chaincfg.Params {
+// getDOGEMainNetParams DOGE
+func getDOGEMainNetParams() *chaincfg.Params {
 	mainNetParams := chaincfg.MainNetParams
 	mainNetParams.Net = 0xc0c0c0c0
 
@@ -129,8 +172,12 @@ func NewOldAddr(version []byte, data []byte) string {
 	return base58.CheckEncode(buf, version[0])
 }
 
-// GetZECMainNetParams ZEC
-func GetZECMainNetParams() *chaincfg.Params {
+const (
+	zecNet = 0x6427e924
+)
+
+// getZECMainNetParams ZEC
+func getZECMainNetParams() *chaincfg.Params {
 	mainNetParams := chaincfg.MainNetParams
 	mainNetParams.Net = zecNet
 

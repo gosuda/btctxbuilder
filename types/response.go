@@ -1,4 +1,4 @@
-package client
+package types
 
 type Block struct {
 	ID                string  `json:"id"`
