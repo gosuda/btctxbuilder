@@ -1,5 +1,0 @@
-package transaction
-
-func GetUtxo() {
-
-}

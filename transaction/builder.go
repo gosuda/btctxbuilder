@@ -14,10 +14,10 @@ type TxBuilder struct {
 	client  *client.Client
 	params  *chaincfg.Params
 
-	msgTx   *wire.MsgTx
 	inputs  TxInputs
 	outputs TxOutputs
 
+	msgTx  *wire.MsgTx
 	packet *psbt.Packet
 }
 
