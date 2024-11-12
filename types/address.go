@@ -11,8 +11,8 @@ import (
 type AddrType string
 
 const (
-	P2PKH         AddrType = "p2pkh"
-	P2SH          AddrType = "p2sh"
+	P2PKH         AddrType = "p2pkh" // legacy p2pkh ( non-segwit )
+	P2SH          AddrType = "p2sh"  // legacy p2sh ( non-segwit )
 	SEGWIT_NATIVE AddrType = "segwit_native"
 	SEGWIT_NESTED AddrType = "segwit_nested"
 	TAPROOT       AddrType = "taproot"
@@ -27,13 +27,13 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, net Network) (address str
 			return "", err
 		}
 		return p2pkh.EncodeAddress(), nil
-	case SEGWIT_NATIVE:
+	case SEGWIT_NATIVE: // p2wpkh
 		p2wpkh, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(publicKey), netParams)
 		if err != nil {
 			return "", err
 		}
 		return p2wpkh.EncodeAddress(), nil
-	case SEGWIT_NESTED:
+	case SEGWIT_NESTED: // p2pkh-p2wpkh
 		p2wpkh, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(publicKey), netParams)
 		if err != nil {
 			return "", err
@@ -65,17 +65,8 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, net Network) (address str
 func ScriptToAddr(script []byte, addrType AddrType, net Network) (address string, err error) {
 	netParams := GetParams(net)
 	switch addrType {
-	case P2PKH:
-		// OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
-		if len(script) != 25 || script[0] != txscript.OP_DUP || script[1] != txscript.OP_HASH160 {
-			return "", fmt.Errorf("invalid P2PKH script")
-		}
-		p2pkh, err := btcutil.NewAddressPubKeyHash(script[3:23], netParams)
-		if err != nil {
-			return "", err
-		}
-		return p2pkh.EncodeAddress(), nil
 	case P2SH:
+		// OP_HASH160 <ScriptHash> OP_EQUAL
 		if len(script) != 23 || script[0] != txscript.OP_HASH160 {
 			return "", fmt.Errorf("invalid P2SH script")
 		}
@@ -84,8 +75,9 @@ func ScriptToAddr(script []byte, addrType AddrType, net Network) (address string
 			return "", err
 		}
 		return p2sh.EncodeAddress(), nil
-	case SEGWIT_NATIVE:
-		if len(script) < 2 || script[0] != txscript.OP_0 {
+	case SEGWIT_NATIVE: // p2wsh
+		// OP_0 <32-byte-ScriptHash>
+		if len(script) != 34 || script[0] != txscript.OP_0 {
 			return "", fmt.Errorf("invalid native segwit script")
 		}
 		witnessProgram := script[2:]
@@ -94,8 +86,26 @@ func ScriptToAddr(script []byte, addrType AddrType, net Network) (address string
 			return "", err
 		}
 		return p2wsh.EncodeAddress(), nil
+	case SEGWIT_NESTED: // p2sh-p2wsh
+		if len(script) != 34 || script[0] != txscript.OP_0 {
+			return "", fmt.Errorf("invalid nested segwit script")
+		}
+		redeemScript, err := txscript.NewScriptBuilder().
+			AddOp(txscript.OP_0).
+			AddData(script[2:]).
+			Script()
+		if err != nil {
+			return "", fmt.Errorf("failed to create redeem script: %w", err)
+		}
+		redeemScriptHash := btcutil.Hash160(redeemScript)
+		p2shAddr, err := btcutil.NewAddressScriptHashFromHash(redeemScriptHash, netParams)
+		if err != nil {
+			return "", fmt.Errorf("failed to create SegWit Nested address: %w", err)
+		}
+		return p2shAddr.EncodeAddress(), nil
 	case TAPROOT:
-		if len(script) < 34 || script[0] != txscript.OP_1 {
+		// OP_1 <32-byte-TweakHash>
+		if len(script) != 34 || script[0] != txscript.OP_1 {
 			return "", fmt.Errorf("invalid Taproot script")
 		}
 		taprootKey := script[2:]
