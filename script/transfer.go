@@ -8,13 +8,8 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func EncodeTransferScript(network types.Network, address string) ([]byte, error) {
-	addr, err := btcutil.DecodeAddress(address, types.GetParams(network))
-	if err != nil {
-		return nil, err
-	}
-
-	return txscript.PayToAddrScript(addr)
+func EncodeTransferScript(address btcutil.Address) ([]byte, error) {
+	return txscript.PayToAddrScript(address)
 }
 
 func DecodeTransferScript(script []byte) (btcutil.Address, error) {

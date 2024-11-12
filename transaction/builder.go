@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
@@ -15,6 +17,8 @@ type TxBuilder struct {
 	msgTx   *wire.MsgTx
 	inputs  TxInputs
 	outputs TxOutputs
+
+	packet *psbt.Packet
 }
 
 func NewTxBuilder(cfg *chaincfg.Params, client *client.Client) *TxBuilder {
@@ -26,6 +30,10 @@ func NewTxBuilder(cfg *chaincfg.Params, client *client.Client) *TxBuilder {
 }
 
 func (t *TxBuilder) Build() (*psbt.Packet, error) {
+	if len(t.inputs) == 0 && len(t.outputs) == 0 {
+		return nil, fmt.Errorf("PSBT packet must contain at least one input or output")
+	}
+
 	outpoints, nSequences, err := t.inputs.ToWire()
 	if err != nil {
 		return nil, err
@@ -34,5 +42,28 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return psbt.New(outpoints, outputs, int32(t.version), 0, nSequences)
+
+	t.msgTx = wire.NewMsgTx(int32(t.version))
+	for i, in := range outpoints {
+		t.msgTx.AddTxIn(&wire.TxIn{
+			PreviousOutPoint: *in,
+			Sequence:         nSequences[i],
+		})
+	}
+	for _, out := range outputs {
+		t.msgTx.AddTxOut(out)
+	}
+
+	p, err := psbt.NewFromUnsignedTx(t.msgTx)
+	if err != nil {
+		return nil, err
+	}
+
+	updater, err := psbt.NewUpdater(p)
+	if err != nil {
+		return nil, err
+	}
+	_ = updater
+
+	return p, nil
 }

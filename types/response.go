@@ -1,5 +1,7 @@
 package types
 
+import "github.com/btcsuite/btcd/btcutil"
+
 type Block struct {
 	ID                string  `json:"id"`
 	Height            uint64  `json:"height"`
@@ -39,8 +41,8 @@ type Vin struct {
 	Sequence     int64    `json:"sequence"`
 
 	// calculated fields
-	Amount  int64  `json:"-"`
-	Address string `json:"-"`
+	Amount  btcutil.Amount `json:"-"`
+	Address string         `json:"-"`
 }
 
 type Vout struct {
@@ -51,9 +53,9 @@ type Vout struct {
 	Value               int64  `json:"value"`
 
 	// calculated fields
-	Amount    int64  `json:"-"`
-	Address   string `json:"-"`
-	PublicKey string `json:"-"`
+	Amount    btcutil.Amount `json:"-"`
+	Address   string         `json:"-"`
+	PublicKey string         `json:"-"`
 }
 
 type Utxo struct {
