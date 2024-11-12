@@ -17,11 +17,11 @@ func TestPubKeyToAddr(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", p2pkh)
 
-	p2wpkh, err := PubKeyToAddr(publicKey, SEGWIT_NATIVE, network)
+	p2wpkh, err := PubKeyToAddr(publicKey, P2WPKH, network)
 	assert.Nil(t, err)
 	assert.Equal(t, "tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", p2wpkh)
 
-	p2sh, err := PubKeyToAddr(publicKey, SEGWIT_NESTED, network)
+	p2sh, err := PubKeyToAddr(publicKey, P2WPKH_NESTED, network)
 	assert.Nil(t, err)
 	assert.Equal(t, "2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", p2sh)
 

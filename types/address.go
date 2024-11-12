@@ -11,11 +11,13 @@ import (
 type AddrType string
 
 const (
-	P2PKH         AddrType = "p2pkh" // legacy p2pkh ( non-segwit )
-	P2SH          AddrType = "p2sh"  // legacy p2sh ( non-segwit )
-	SEGWIT_NATIVE AddrType = "segwit_native"
-	SEGWIT_NESTED AddrType = "segwit_nested"
-	TAPROOT       AddrType = "taproot"
+	P2PKH         AddrType = "p2pkh"        // legacy p2pkh ( non-segwit )
+	P2SH          AddrType = "p2sh"         // legacy p2sh ( non-segwit )
+	P2WPKH        AddrType = "p2wpkh"       // native segwit
+	P2WPKH_NESTED AddrType = "p2pkh-nested" // nested segwit
+	P2WSH         AddrType = "p2wsh"        // native segwit
+	P2WSH_NESTED  AddrType = "p2wsh-nested" // nested segwit
+	TAPROOT       AddrType = "taproot"      // taproot
 )
 
 func PubKeyToAddr(publicKey []byte, addrType AddrType, net Network) (address string, err error) {
@@ -27,13 +29,13 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, net Network) (address str
 			return "", err
 		}
 		return p2pkh.EncodeAddress(), nil
-	case SEGWIT_NATIVE: // p2wpkh
+	case P2WPKH:
 		p2wpkh, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(publicKey), netParams)
 		if err != nil {
 			return "", err
 		}
 		return p2wpkh.EncodeAddress(), nil
-	case SEGWIT_NESTED: // p2pkh-p2wpkh
+	case P2WPKH_NESTED:
 		p2wpkh, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(publicKey), netParams)
 		if err != nil {
 			return "", err
@@ -75,7 +77,7 @@ func ScriptToAddr(script []byte, addrType AddrType, net Network) (address string
 			return "", err
 		}
 		return p2sh.EncodeAddress(), nil
-	case SEGWIT_NATIVE: // p2wsh
+	case P2WSH:
 		// OP_0 <32-byte-ScriptHash>
 		if len(script) != 34 || script[0] != txscript.OP_0 {
 			return "", fmt.Errorf("invalid native segwit script")
@@ -86,7 +88,8 @@ func ScriptToAddr(script []byte, addrType AddrType, net Network) (address string
 			return "", err
 		}
 		return p2wsh.EncodeAddress(), nil
-	case SEGWIT_NESTED: // p2sh-p2wsh
+	case P2WSH_NESTED:
+		// OP_0 <32-byte-ScriptHash>
 		if len(script) != 34 || script[0] != txscript.OP_0 {
 			return "", fmt.Errorf("invalid nested segwit script")
 		}
