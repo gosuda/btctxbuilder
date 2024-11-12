@@ -11,13 +11,15 @@ import (
 type AddrType string
 
 const (
-	P2PKH         AddrType = "p2pkh"        // legacy p2pkh ( non-segwit )
-	P2SH          AddrType = "p2sh"         // legacy p2sh ( non-segwit )
+	P2PKH         AddrType = "p2pkh"        // non segwit
 	P2WPKH        AddrType = "p2wpkh"       // native segwit
 	P2WPKH_NESTED AddrType = "p2pkh-nested" // nested segwit
-	P2WSH         AddrType = "p2wsh"        // native segwit
-	P2WSH_NESTED  AddrType = "p2wsh-nested" // nested segwit
-	TAPROOT       AddrType = "taproot"      // taproot
+
+	P2SH         AddrType = "p2sh"         // non segwit
+	P2WSH        AddrType = "p2wsh"        // native segwit
+	P2WSH_NESTED AddrType = "p2wsh-nested" // nested segwit
+
+	TAPROOT AddrType = "taproot" // taproot
 )
 
 func PubKeyToAddr(publicKey []byte, addrType AddrType, net Network) (address string, err error) {
