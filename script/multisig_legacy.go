@@ -27,11 +27,32 @@ func EncodeMultiSigScript(network types.Network, pubKeys [][]byte, nRequired int
 	return script, nil
 }
 
+const (
+	ScriptVersion = 0
+)
+
 func DecodeMultiSigScript(script []byte) ([][]byte, error) {
-	// nRequired, pubKeys, _, err := txscript.MakeScriptTokenizer(script)
-	// if err != nil {
-	// return 0, nil, err
-	// }
-	// return nRequired, pubKeys, nil
-	return nil, nil // TODO
+	tokenizer := txscript.MakeScriptTokenizer(ScriptVersion, script)
+
+	var pubkeys [][]byte = make([][]byte, 0, 16)
+	var nRequired int = 0
+	for tokenizer.Next() {
+		op := tokenizer.Opcode()
+		data := tokenizer.Data()
+
+		// parse nRequired opcode for multisig
+		if nRequired == 0 && op >= txscript.OP_1 && op <= txscript.OP_16 {
+			nRequired = int(op - txscript.OP_1 + 1)
+			continue
+		}
+
+		if len(data) > 0 && (op == txscript.OP_DATA_33 || op == txscript.OP_DATA_65) {
+			pubkeys = append(pubkeys, data)
+		}
+	}
+	if err := tokenizer.Err(); err != nil {
+		return nil, err
+	}
+
+	return pubkeys, nil
 }
