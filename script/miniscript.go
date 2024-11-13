@@ -9,13 +9,13 @@ import (
 type NodeType string
 
 const (
-	Pk           NodeType = "publickey"
-	Pkh          NodeType = "publickeyhash"
-	After        NodeType = "after"
+	Pk           NodeType = "pk"
+	Pkh          NodeType = "pkh"
 	Older        NodeType = "older"
+	After        NodeType = "after"
 	Thresh       NodeType = "thresh"
-	And          NodeType = "and"
-	Or           NodeType = "or"
+	And          NodeType = "and_b"
+	Or           NodeType = "or_b"
 	Multi        NodeType = "multi"
 	CheckSig     NodeType = "checksig"
 	CheckSigHash NodeType = "checksighash"

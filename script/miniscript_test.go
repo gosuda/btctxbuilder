@@ -1,9 +1,11 @@
 package script
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/benma/miniscript-go"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
@@ -133,4 +135,28 @@ func TestOlderNode(t *testing.T) {
 
 		require.Equal(t, olderNode.Time, olderNodeNew.Time)
 	}
+}
+
+func TestMakeMiniscript(t *testing.T) {
+	privKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+	pubKey := privKey.PubKey().SerializeCompressed()
+
+	mini := fmt.Sprintf("pk_h(%x)", pubKey)
+	ast, err := miniscript.Parse(mini)
+	require.NoError(t, err)
+
+	err = ast.ApplyVars(func(identifier string) ([]byte, error) {
+		// Provide the public key hash when requested
+		if identifier == fmt.Sprintf("%x", pubKey) {
+			return pubKey, nil
+		}
+		// Return nil if no matching identifier
+		return nil, fmt.Errorf("unknown identifier: %s", identifier)
+	})
+	require.NoError(t, err)
+
+	script, err := ast.Script()
+	require.NoError(t, err)
+	fmt.Println(script)
 }
