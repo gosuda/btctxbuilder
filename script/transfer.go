@@ -4,16 +4,16 @@ import (
 	"errors"
 
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
 func EncodeTransferScript(address btcutil.Address) ([]byte, error) {
 	return txscript.PayToAddrScript(address)
 }
 
-func DecodeTransferScript(script []byte) (btcutil.Address, error) {
-	_, addresses, _, err := txscript.ExtractPkScriptAddrs(script, types.GetParams(types.BTC))
+func DecodeTransferScript(script []byte, params *chaincfg.Params) (btcutil.Address, error) {
+	_, addresses, _, err := txscript.ExtractPkScriptAddrs(script, params)
 	if err != nil {
 		return nil, err
 	}
