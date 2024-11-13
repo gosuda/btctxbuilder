@@ -2,6 +2,7 @@ package script
 
 import (
 	"testing"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
@@ -74,5 +75,62 @@ func TestPkhNode(t *testing.T) {
 
 		require.Equal(t, pubKeyHash, pkhNodeNew.Hash)
 	}
+}
 
+func TestAfterNode(t *testing.T) {
+	for _, test := range []struct {
+		time int64
+	}{
+		{850000},                  // block height
+		{time.Now().UTC().Unix()}, // unix timestamp
+		{time.Now().UTC().AddDate(0, 0, -1).Unix()},
+		{time.Now().UTC().AddDate(0, 0, 1).Unix()},
+	} {
+		afterNode := &AfterNode{Time: test.time}
+
+		// create to script
+		builder := txscript.NewScriptBuilder()
+		afterNode.ToScript(builder)
+		script, err := builder.Script()
+		require.NoError(t, err)
+
+		// recover from script
+		afterNodeNew := &AfterNode{}
+		err = afterNodeNew.FromScript(script)
+		require.NoError(t, err)
+
+		require.Equal(t, test.time, afterNodeNew.Time)
+	}
+}
+
+func TestOlderNode(t *testing.T) {
+	for _, test := range []struct {
+		blockHeight int64
+		timeSecond  int64
+	}{
+		{100, 0},  // 100 block height later
+		{0, 2048}, // 2048 seconds later
+	} {
+		olderNode := &OlderNode{}
+		if test.blockHeight > 0 {
+			err := olderNode.SetBlock(test.blockHeight)
+			require.NoError(t, err)
+		} else {
+			err := olderNode.SetTime(test.timeSecond)
+			require.NoError(t, err)
+		}
+
+		// create to script
+		builder := txscript.NewScriptBuilder()
+		olderNode.ToScript(builder)
+		script, err := builder.Script()
+		require.NoError(t, err)
+
+		// recover from script
+		olderNodeNew := &OlderNode{}
+		err = olderNodeNew.FromScript(script)
+		require.NoError(t, err)
+
+		require.Equal(t, olderNode.Time, olderNodeNew.Time)
+	}
 }

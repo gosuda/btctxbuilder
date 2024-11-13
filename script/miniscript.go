@@ -107,6 +107,8 @@ func (a *PkhNode) ToScript(builder *txscript.ScriptBuilder) {
 }
 
 // AfterNod represents a locktime argument
+// if Time is less than 500000000, it is a block height
+// otherwise, it is a unix timestamp
 type AfterNode struct {
 	Time int64
 }
@@ -118,19 +120,22 @@ func (a *AfterNode) Validate() error {
 	return nil
 }
 
-// func (a *AfterNode) FromScript(script []byte) error {
-// 	if len(script) >= 2 &&
-// 		script[len(script)-2] == txscript.OP_CHECKLOCKTIMEVERIFY &&
-// 		script[len(script)-1] == txscript.OP_DROP {
-// 		lockTime, _, err := DecodeInt(script[:len(script)-2])
-// 		if err != nil {
-// 			return errors.New("invalid locktime value")
-// 		}
-// 		a.Time = lockTime
-// 		return nil
-// 	}
-// 	return errors.New("invalid after script")
-// }
+func (a *AfterNode) FromScript(script []byte) error {
+	if len(script) >= 2 &&
+		script[len(script)-2] == txscript.OP_CHECKLOCKTIMEVERIFY &&
+		script[len(script)-1] == txscript.OP_DROP {
+
+		opcode := script[0]
+		data := script[1 : len(script)-2]
+		lockTime, _, err := DecodeInt64(opcode, data)
+		if err != nil {
+			return errors.New("invalid locktime value")
+		}
+		a.Time = lockTime
+		return nil
+	}
+	return errors.New("invalid after script")
+}
 
 func (a *AfterNode) ToScript(builder *txscript.ScriptBuilder) {
 	builder.AddInt64(a.Time).
@@ -143,6 +148,28 @@ type OlderNode struct {
 	Time int64
 }
 
+func (a *OlderNode) SetBlock(height int64) error {
+	if height <= 0 {
+		return errors.New("block count must be positive")
+	} else if height >= 0x80000000 {
+		return errors.New("block count exceeds maximum for blocks")
+	}
+	a.Time = height
+	return nil
+}
+
+func (a *OlderNode) SetTime(seconds int64) error {
+	if seconds <= 0 {
+		return errors.New("time must be positive")
+	}
+	timeUnits := seconds / 512
+	if seconds%512 != 0 {
+		return errors.New("time must be a multiple of 512 seconds")
+	}
+	a.Time = 0x80000000 | timeUnits
+	return nil
+}
+
 func (a *OlderNode) Validate() error {
 	if a.Time <= 0 {
 		return errors.New("relative locktime must be positive")
@@ -150,19 +177,22 @@ func (a *OlderNode) Validate() error {
 	return nil
 }
 
-// func (a *OlderNode) FromScript(script []byte) error {
-// 	if len(script) >= 2 &&
-// 		script[len(script)-2] == txscript.OP_CHECKSEQUENCEVERIFY &&
-// 		script[len(script)-1] == txscript.OP_DROP {
-// 		sequence, _, err := DecodeInt(script[:len(script)-2])
-// 		if err != nil {
-// 			return errors.New("invalid sequence value")
-// 		}
-// 		a.Time = sequence
-// 		return nil
-// 	}
-// 	return errors.New("invalid older script")
-// }
+func (a *OlderNode) FromScript(script []byte) error {
+	if len(script) >= 2 &&
+		script[len(script)-2] == txscript.OP_CHECKSEQUENCEVERIFY &&
+		script[len(script)-1] == txscript.OP_DROP {
+
+		opcode := script[0]
+		data := script[1 : len(script)-2]
+		sequence, _, err := DecodeInt64(opcode, data)
+		if err != nil {
+			return errors.New("invalid sequence value")
+		}
+		a.Time = sequence
+		return nil
+	}
+	return errors.New("invalid older script")
+}
 
 func (a *OlderNode) ToScript(builder *txscript.ScriptBuilder) {
 	builder.AddInt64(a.Time).
