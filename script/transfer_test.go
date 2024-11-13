@@ -8,11 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTransferScript(t *testing.T) {
+func TestEncodeTransferScript(t *testing.T) {
 	for _, test := range []struct {
 		addrType types.AddrType
 		network  types.Network
 	}{
+		// from public key
 		{types.P2PKH, types.BTC_Testnet3},
 		{types.P2WPKH, types.BTC_Testnet3},
 		{types.P2WPKH_NESTED, types.BTC_Testnet3},
