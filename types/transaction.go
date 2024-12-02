@@ -1,37 +1,22 @@
 package types
 
-import (
-	"bytes"
-
-	"github.com/btcsuite/btcd/btcutil/psbt"
-	"github.com/rabbitprincess/btctxbuilder/utils"
-)
-
-type TxType string
+type ScriptType string
 
 const (
-	Transfer TxType = "transfer"
-	FeeBump  TxType = "feebump"
+	Key          ScriptType = "key"
+	RedeemScript ScriptType = "redeemscript"
+	MAST         ScriptType = "mast"
 
-	Script TxType = "script"
+	OpReturn ScriptType = "opreturn" // For embedding arbitrary data
+	HashLock ScriptType = "hashlock" // Hash lock condition (e.g., Atomic Swap)
 )
 
-func DecodePSBT(psbtStr string) (*psbt.Packet, error) {
-	var err error
-	var psbtRaw []byte
+type TransactionType string
 
-	isHex := utils.IsHex(psbtStr)
-	if isHex {
-		psbtRaw, err = utils.Decode(psbtStr)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		psbtRaw = []byte(psbtStr)
-	}
-	p, err := psbt.NewFromRawBytes(bytes.NewReader(psbtRaw), !isHex)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
-}
+const (
+	Transfer TransactionType = "transfer"
+	Multisig TransactionType = "multisig"
+	Timelock TransactionType = "timelock"
+
+	Ordinals TransactionType = "ordinals"
+)

@@ -15,17 +15,17 @@ func TestPubKeyToAddr(t *testing.T) {
 
 	p2pkh, err := PubKeyToAddr(publicKey, P2PKH, network)
 	assert.NoError(t, err)
-	assert.Equal(t, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", p2pkh)
+	assert.Equal(t, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", p2pkh.EncodeAddress())
 
 	p2wpkh, err := PubKeyToAddr(publicKey, P2WPKH, network)
 	assert.NoError(t, err)
-	assert.Equal(t, "tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", p2wpkh)
+	assert.Equal(t, "tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", p2wpkh.EncodeAddress())
 
 	p2sh, err := PubKeyToAddr(publicKey, P2WPKH_NESTED, network)
 	assert.NoError(t, err)
-	assert.Equal(t, "2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", p2sh)
+	assert.Equal(t, "2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", p2sh.EncodeAddress())
 
 	p2tr, err := PubKeyToAddr(publicKey, TAPROOT, network)
 	assert.NoError(t, err)
-	assert.Equal(t, "tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", p2tr)
+	assert.Equal(t, "tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", p2tr.EncodeAddress())
 }

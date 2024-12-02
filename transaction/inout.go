@@ -10,6 +10,21 @@ import (
 
 type TxInputs []*types.Vin
 
+func (t TxInputs) AddInputTransfer(txid string, vout uint32, address string, amount int64) error {
+	if t == nil {
+		t = make(TxInputs, 0)
+	}
+
+	vin := &types.Vin{
+		Txid:    txid,
+		Vout:    vout,
+		Amount:  btcutil.Amount(amount),
+		Address: address,
+	}
+	t = append(t, vin)
+	return nil
+}
+
 func (t TxInputs) AddInput(vin *types.Vin, address string, amount int64) error {
 	if t == nil {
 		t = make(TxInputs, 0)
@@ -50,16 +65,25 @@ func (t TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
 
 type TxOutputs []*types.Vout
 
-func (t TxOutputs) AddOutput(vout *types.Vout, address btcutil.Address, amount int64) error {
+func (t TxOutputs) AddOutputTransfer(address string, amount int64) error {
 	if t == nil {
 		t = make(TxOutputs, 0)
 	}
 
-	if vout == nil {
-
+	vout := &types.Vout{
+		Address: address,
+		Amount:  btcutil.Amount(amount),
 	}
+	t = append(t, vout)
+	return nil
+}
 
-	vout.Address = address.EncodeAddress()
+func (t TxOutputs) AddOutput(address string, amount int64) error {
+	if t == nil {
+		t = make(TxOutputs, 0)
+	}
+	vout := &types.Vout{}
+	vout.Address = address
 	vout.Amount = btcutil.Amount(amount)
 	t = append(t, vout)
 	return nil

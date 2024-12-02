@@ -13,6 +13,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.2
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/stretchr/testify v1.9.0
+	lukechampine.com/uint128 v1.3.0
 )
 
 require (
