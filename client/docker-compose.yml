@@ -1,0 +1,24 @@
+services:
+  btc-node:
+    container_name: btc-node
+    image: bitcoin:v27.1
+    ports:
+      - "8110:8332"
+    volumes:
+      - ./btc-data:/root/.bitcoin
+    healthcheck:
+      test: ["CMD-SHELL", "bitcoin-cli getblockchaininfo > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command:
+      - bitcoind
+      - --rpcallowip=0.0.0.0/0
+      - --rpcbind=0.0.0.0
+      - --rpcport=8332
+      - --datadir=/root/.bitcoin
+      - --server=1
+      - --txindex=1
+      - --rest=1
+    networks:
+      - default
