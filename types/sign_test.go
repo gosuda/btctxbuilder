@@ -3,18 +3,36 @@ package types
 import (
 	"testing"
 
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParseScriptType(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		pkScript []byte
-		expect   ScriptType
+		name   string
+		script []byte
+		expect txscript.ScriptClass
 	}{
 		{
 			name: "valid P2PK",
-			pkScript: []byte{
+			script: []byte{
+				// OP_DATA_33 (33-byte compressed public key)
+				0x21,
+				// <33-byte public key>
+				0x02, 0xa2, 0xb3, 0x76, 0xe2, 0xd9,
+				0x96, 0x49, 0xf9, 0x33, 0x2c, 0x4c,
+				0x0c, 0xb4, 0xe0, 0x5c, 0xe1, 0x64,
+				0xeb, 0x59, 0x1f, 0x1f, 0x29, 0xb8,
+				0x4f, 0x49, 0x03, 0x24, 0x4e, 0x52,
+				0x24, 0xe4, 0xcf,
+				// OP_CHECKSIG
+				0xac,
+			},
+			expect: txscript.PubKeyTy,
+		},
+		{
+			name: "valid P2PKH",
+			script: []byte{
 				// OP_DUP
 				0x76,
 				// OP_HASH160
@@ -30,11 +48,11 @@ func TestParseScriptType(t *testing.T) {
 				// OP_CHECKSIG
 				0xac,
 			},
-			expect: ScriptP2PKH,
+			expect: txscript.PubKeyHashTy,
 		},
 		{
 			name: "invalid P2PKH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_DUP
 				0x76,
 				// OP_HASH160
@@ -50,11 +68,11 @@ func TestParseScriptType(t *testing.T) {
 				// OP_CHECKSIGVERIFY
 				0xad,
 			},
-			expect: ScriptUnknown,
+			expect: txscript.NonStandardTy,
 		},
 		{
 			name: "valid P2SH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_HASH160
 				0xA9,
 				// OP_DATA_20
@@ -66,13 +84,13 @@ func TestParseScriptType(t *testing.T) {
 				// OP_EQUAL
 				0x87,
 			},
-			expect: ScriptP2SH,
+			expect: txscript.ScriptHashTy,
 		},
 		// Invalid P2SH - same as above but replaced OP_EQUAL with
 		// OP_EQUALVERIFY.
 		{
 			name: "invalid P2SH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_HASH160
 				0xA9,
 				// OP_DATA_20
@@ -84,11 +102,11 @@ func TestParseScriptType(t *testing.T) {
 				// OP_EQUALVERIFY
 				0x88,
 			},
-			expect: ScriptUnknown,
+			expect: txscript.NonStandardTy,
 		},
 		{
 			name: "valid v0 P2WSH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_0
 				0x00,
 				// OP_DATA_32
@@ -99,12 +117,12 @@ func TestParseScriptType(t *testing.T) {
 				0x06, 0xf6, 0x96, 0xcd, 0x06, 0xf6, 0x96, 0xcd,
 				0x06, 0xf6, 0x96, 0xcd, 0x06, 0xf6, 0x96, 0xcd,
 			},
-			expect: ScriptP2WSH,
+			expect: txscript.WitnessV0ScriptHashTy,
 		},
 		// Invalid v0 P2WSH - same as above but missing one byte.
 		{
 			name: "invalid v0 P2WSH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_0
 				0x00,
 				// OP_DATA_32
@@ -115,11 +133,11 @@ func TestParseScriptType(t *testing.T) {
 				0x06, 0xf6, 0x96, 0xcd, 0x06, 0xf6, 0x96, 0xcd,
 				0x06, 0xf6, 0x96, 0xcd, 0x06, 0xf6, 0x96,
 			},
-			expect: ScriptUnknown,
+			expect: txscript.NonStandardTy,
 		},
 		{
 			name: "valid v0 P2WPKH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_0
 				0x00,
 				// OP_DATA_20
@@ -129,12 +147,12 @@ func TestParseScriptType(t *testing.T) {
 				0xa5, 0x15, 0x04, 0x52, 0x3a, 0x60, 0xd4, 0x03,
 				0x06, 0xf6, 0x96, 0xcd,
 			},
-			expect: ScriptP2WPKH,
+			expect: txscript.WitnessV0PubKeyHashTy,
 		},
 		// Invalid v0 P2WPKH - same as above but missing one byte.
 		{
 			name: "invalid v0 P2WPKH",
-			pkScript: []byte{
+			script: []byte{
 				// OP_0
 				0x00,
 				// OP_DATA_20
@@ -144,10 +162,30 @@ func TestParseScriptType(t *testing.T) {
 				0xa5, 0x15, 0x04, 0x52, 0x3a, 0x60, 0xd4, 0x03,
 				0x06, 0xf6, 0x96,
 			},
-			expect: ScriptUnknown,
+			expect: txscript.NonStandardTy,
+		},
+		{
+			name: "valid op return",
+			script: []byte{
+				// OP_RETURN
+				0x6a,
+				// <additional data>
+				0x4c, 0x50, 0x00, 0x01, 0x02, 0x03, 0x04,
+				0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
+				0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+				0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c,
+				0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24,
+				0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c,
+				0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34,
+				0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c,
+				0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44,
+				0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c,
+				0x4d, 0x4e, 0x4f,
+			},
+			expect: txscript.NullDataTy,
 		},
 	} {
-		scriptType := ParseScriptType(test.pkScript)
+		scriptType := ParseScriptType(test.script)
 		require.Equal(t, test.expect, scriptType, test.name)
 	}
 
