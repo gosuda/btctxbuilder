@@ -1,9 +1,6 @@
 package transaction
 
 import (
-	"fmt"
-	"sort"
-
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
@@ -50,26 +47,4 @@ func NewTransferTx(net types.Network, fromAddress string, toAddress map[string]i
 	}
 
 	return builder.Build()
-}
-
-func SelectUtxo(utxos []*types.Utxo, amount int64) (selected []*types.Utxo, totalAmount int64, err error) {
-	sort.Slice(utxos, func(i, j int) bool {
-		return utxos[i].Value < utxos[j].Value
-	})
-
-	var total int64
-	var selectedUtxos []*types.Utxo
-	for _, utxo := range utxos {
-		total += utxo.Value
-		selectedUtxos = append(selectedUtxos, utxo)
-		if total >= amount {
-			break
-		}
-	}
-
-	if total < amount {
-		return nil, 0, fmt.Errorf("insufficient balance | total : %v | to amount : %v", total, amount)
-	}
-
-	return selectedUtxos, total, nil
 }
