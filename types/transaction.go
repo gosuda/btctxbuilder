@@ -1,16 +1,5 @@
 package types
 
-type ScriptType string
-
-const (
-	Key          ScriptType = "key"
-	RedeemScript ScriptType = "redeemscript"
-	MAST         ScriptType = "mast"
-
-	OpReturn ScriptType = "opreturn" // For embedding arbitrary data
-	HashLock ScriptType = "hashlock" // Hash lock condition (e.g., Atomic Swap)
-)
-
 type TransactionType string
 
 const (

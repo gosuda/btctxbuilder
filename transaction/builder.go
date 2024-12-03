@@ -59,11 +59,5 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		return nil, err
 	}
 
-	updater, err := psbt.NewUpdater(p)
-	if err != nil {
-		return nil, err
-	}
-	_ = updater
-
 	return p, nil
 }
