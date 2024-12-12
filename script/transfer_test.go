@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/rabbitprincess/btctxbuilder/address"
 	"github.com/rabbitprincess/btctxbuilder/types"
 	"github.com/stretchr/testify/require"
 )
@@ -24,16 +25,18 @@ func TestEncodeTransferScript(t *testing.T) {
 		privKey, err := btcec.NewPrivateKey()
 		require.NoError(t, err)
 		pubKey := privKey.PubKey().SerializeUncompressed()
-		address, err := types.PubKeyToAddr(pubKey, test.addrType, test.network)
+		addr, err := address.PubKeyToAddr(pubKey, test.addrType, test.network)
 		require.NoError(t, err)
 
 		// encode address to script
-		script, err := EncodeTransferScript(address)
+		decodeAddr, err := address.DecodeAddress(addr, test.network)
+		require.NoError(t, err)
+		script, err := EncodeTransferScript(decodeAddr)
 		require.NoError(t, err)
 
 		// decode script to address
 		decodedAddress, err := DecodeTransferScript(script, param)
 		require.NoError(t, err)
-		require.Equal(t, address.EncodeAddress(), decodedAddress.EncodeAddress())
+		require.Equal(t, addr, decodedAddress.EncodeAddress())
 	}
 }

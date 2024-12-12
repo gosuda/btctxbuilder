@@ -17,6 +17,8 @@ type TxBuilder struct {
 	inputs  TxInputs
 	outputs TxOutputs
 
+	changeAddress string
+
 	msgTx  *wire.MsgTx
 	packet *psbt.Packet
 }
@@ -54,10 +56,16 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		t.msgTx.AddTxOut(out)
 	}
 
+	err = t.FundRawTransaction()
+	if err != nil {
+		return nil, err
+	}
+
 	p, err := psbt.NewFromUnsignedTx(t.msgTx)
 	if err != nil {
 		return nil, err
 	}
+	p.GetTxFee()
 
 	return p, nil
 }

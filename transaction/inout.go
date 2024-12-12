@@ -10,10 +10,7 @@ import (
 
 type TxInputs []*types.Vin
 
-func (t TxInputs) AddInputTransfer(txid string, vout uint32, address string, amount int64) error {
-	if t == nil {
-		t = make(TxInputs, 0)
-	}
+func (t *TxInputs) AddInputTransfer(txid string, vout uint32, address string, amount int64) error {
 
 	vin := &types.Vin{
 		Txid:    txid,
@@ -21,33 +18,30 @@ func (t TxInputs) AddInputTransfer(txid string, vout uint32, address string, amo
 		Amount:  btcutil.Amount(amount),
 		Address: address,
 	}
-	t = append(t, vin)
+	*t = append(*t, vin)
 	return nil
 }
 
-func (t TxInputs) AddInput(vin *types.Vin, address string, amount int64) error {
-	if t == nil {
-		t = make(TxInputs, 0)
-	}
+func (t *TxInputs) AddInput(vin *types.Vin, address string, amount int64) error {
 
 	vin.Address = address
 	vin.Amount = btcutil.Amount(amount)
-	t = append(t, vin)
+	*t = append(*t, vin)
 	return nil
 }
 
-func (t TxInputs) AmountTotal() btcutil.Amount {
+func (t *TxInputs) AmountTotal() btcutil.Amount {
 	var total btcutil.Amount
-	for _, vin := range t {
+	for _, vin := range *t {
 		total += vin.Amount
 	}
 	return total
 }
 
-func (t TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
-	outpoints := make([]*wire.OutPoint, 0, len(t))
-	nSequences := make([]uint32, 0, len(t))
-	for _, in := range t {
+func (t *TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
+	outpoints := make([]*wire.OutPoint, 0, len(*t))
+	nSequences := make([]uint32, 0, len(*t))
+	for _, in := range *t {
 		txHash, err := chainhash.NewHashFromStr(in.Txid)
 		if err != nil {
 			return nil, nil, err
@@ -65,41 +59,34 @@ func (t TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
 
 type TxOutputs []*types.Vout
 
-func (t TxOutputs) AddOutputTransfer(address string, amount int64) error {
-	if t == nil {
-		t = make(TxOutputs, 0)
-	}
-
+func (t *TxOutputs) AddOutputTransfer(address string, amount int64) error {
 	vout := &types.Vout{
 		Address: address,
 		Amount:  btcutil.Amount(amount),
 	}
-	t = append(t, vout)
+	*t = append(*t, vout)
 	return nil
 }
 
-func (t TxOutputs) AddOutput(address string, amount int64) error {
-	if t == nil {
-		t = make(TxOutputs, 0)
-	}
+func (t *TxOutputs) AddOutput(address string, amount int64) error {
 	vout := &types.Vout{}
 	vout.Address = address
 	vout.Amount = btcutil.Amount(amount)
-	t = append(t, vout)
+	*t = append(*t, vout)
 	return nil
 }
 
-func (t TxOutputs) AmountTotal() btcutil.Amount {
+func (t *TxOutputs) AmountTotal() btcutil.Amount {
 	var total btcutil.Amount
-	for _, vout := range t {
+	for _, vout := range *t {
 		total += vout.Amount
 	}
 	return total
 }
 
-func (t TxOutputs) ToWire() ([]*wire.TxOut, error) {
-	txOuts := make([]*wire.TxOut, 0, len(t))
-	for _, out := range t {
+func (t *TxOutputs) ToWire() ([]*wire.TxOut, error) {
+	txOuts := make([]*wire.TxOut, 0, len(*t))
+	for _, out := range *t {
 		pkScript, err := utils.Decode(out.Scriptpubkey)
 		if err != nil {
 			return nil, err

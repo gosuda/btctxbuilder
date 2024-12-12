@@ -29,8 +29,8 @@ func (t *TxBuilder) SufficentFunds() bool {
 	return change >= 0
 }
 
-func (t *TxBuilder) FundRawTransaction(changeAddress string) error {
-	changeAddressBTC, err := btcutil.DecodeAddress(changeAddress, t.params)
+func (t *TxBuilder) FundRawTransaction() error {
+	changeAddressBTC, err := btcutil.DecodeAddress(t.changeAddress, t.params)
 	if err != nil {
 		return err
 	}

@@ -39,11 +39,9 @@ func NewTransferTx(net types.Network, fromAddress string, toAddress map[string]i
 
 	// fund outputs
 	if changeAddress == "" {
-		changeAddress = fromAddress
-	}
-	err = builder.FundRawTransaction(changeAddress)
-	if err != nil {
-		return nil, err
+		builder.changeAddress = fromAddress
+	} else {
+		builder.changeAddress = changeAddress
 	}
 
 	return builder.Build()
