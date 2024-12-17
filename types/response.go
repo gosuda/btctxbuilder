@@ -33,7 +33,7 @@ type Transaction struct {
 type Vin struct {
 	Txid         string   `json:"txid"`
 	Vout         uint32   `json:"vout"`
-	Prevout      any      `json:"prevout"`
+	Prevout      *Vout    `json:"prevout"`
 	Scriptsig    string   `json:"scriptsig"`
 	ScriptsigAsm string   `json:"scriptsig_asm"`
 	Witness      []string `json:"witness"`

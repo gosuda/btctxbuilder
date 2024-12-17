@@ -7,8 +7,8 @@ import (
 )
 
 func NewTransferTx(net types.Network, fromAddress string, toAddress map[string]int64, changeAddress string) (*psbt.Packet, error) {
-	client := client.NewClient(net)
-	builder := NewTxBuilder(types.GetParams(net), client)
+	c := client.NewClient(net)
+	builder := NewTxBuilder(types.GetParams(net), c)
 
 	var toTotal int64
 	for _, amount := range toAddress {
@@ -29,6 +29,16 @@ func NewTransferTx(net types.Network, fromAddress string, toAddress map[string]i
 
 	// create inputs
 	for _, utxo := range selected {
+		rawTxBytes, err := builder.client.GetRawTx(utxo.Txid)
+		if err != nil {
+			return nil, err
+		}
+		msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
+		if err != nil {
+			return nil, err
+		}
+		_ = msgTx
+		// vout := msgTx.TxOut[utxo.Vout]
 		builder.inputs.AddInputTransfer(utxo.Txid, utxo.Vout, fromAddress, utxo.Value)
 	}
 

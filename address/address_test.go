@@ -13,61 +13,66 @@ import (
 
 func TestPubKeyToAddr(t *testing.T) {
 	network := types.BTC_Testnet3
+	params := types.GetParams(network)
 	pubKeyHex := "0357bbb2d4a9cb8a2357633f201b9c518c2795ded682b7913c6beef3fe23bd6d2f"
 	publicKey, err := hex.DecodeString(pubKeyHex)
 	assert.NoError(t, err)
 
-	p2pk, err := PubKeyToAddr(publicKey, types.P2PK, network)
+	p2pk, err := PubKeyToAddr(publicKey, types.P2PK, params)
 	require.NoError(t, err)
 	// base58 encoded compressed public key
 	assert.Equal(t, "zbRapgvpp4xSYvt8oeuzBc9qfZh2UfAgQ6r218xhCQxe", p2pk)
 
-	p2pkh, err := PubKeyToAddr(publicKey, types.P2PKH, network)
+	p2pkh, err := PubKeyToAddr(publicKey, types.P2PKH, params)
 	require.NoError(t, err)
 	assert.Equal(t, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", p2pkh)
 
-	p2wpkh, err := PubKeyToAddr(publicKey, types.P2WPKH, network)
+	p2wpkh, err := PubKeyToAddr(publicKey, types.P2WPKH, params)
 	require.NoError(t, err)
 	assert.Equal(t, "tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", p2wpkh)
 
-	nestedP2wpkh, err := PubKeyToAddr(publicKey, types.P2WPKH_NESTED, network)
+	nestedP2wpkh, err := PubKeyToAddr(publicKey, types.P2WPKH_NESTED, params)
 	require.NoError(t, err)
 	assert.Equal(t, "2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", nestedP2wpkh)
 
-	p2tr, err := PubKeyToAddr(publicKey, types.TAPROOT, network)
+	p2tr, err := PubKeyToAddr(publicKey, types.TAPROOT, params)
 	require.NoError(t, err)
 	assert.Equal(t, "tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", p2tr)
 }
 
 func TestAddrType(t *testing.T) {
 	network := types.BTC_Testnet3
-	p2pkh, err := GetAddressType("mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", network)
+	params := types.GetParams(network)
+	p2pkh, err := GetAddressType("mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", params)
 	require.NoError(t, err)
 	require.Equal(t, types.P2PKH, p2pkh)
 
-	p2wpkh, err := GetAddressType("tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", network)
+	p2wpkh, err := GetAddressType("tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", params)
 	require.NoError(t, err)
 	require.Equal(t, types.P2WPKH, p2wpkh)
 
-	nestedP2wpkh, err := GetAddressType("2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", network)
+	nestedP2wpkh, err := GetAddressType("2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", params)
 	require.NoError(t, err)
 	// p2wpkh-nested = p2sh
 	require.Equal(t, types.P2SH, nestedP2wpkh)
 
-	p2tr, err := GetAddressType("tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", network)
+	p2tr, err := GetAddressType("tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", params)
 	require.NoError(t, err)
 	require.Equal(t, types.TAPROOT, p2tr)
 
 }
 
 func TestGenerateAddress(t *testing.T) {
+	network := types.BTC_Testnet3
+	params := types.GetParams(network)
+
 	priv, err := secp256k1.GeneratePrivateKey()
 	require.NoError(t, err)
 	privKey := priv.Serialize()
 
 	pub := priv.PubKey()
 	pubKey := pub.SerializeCompressed()
-	addressP2PKH, err := PubKeyToAddr(pubKey, types.P2PKH, types.BTC_Signet)
+	addressP2PKH, err := PubKeyToAddr(pubKey, types.P2PKH, params)
 	require.NoError(t, err)
 
 	fmt.Println("Private Key: ", hex.EncodeToString(privKey))

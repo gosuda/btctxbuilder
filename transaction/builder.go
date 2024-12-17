@@ -6,7 +6,9 @@ import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/rabbitprincess/btctxbuilder/address"
 	"github.com/rabbitprincess/btctxbuilder/client"
+	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
 type TxBuilder struct {
@@ -65,7 +67,43 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.GetTxFee()
+
+	err = t.decorateTxInputs(p)
+	if err != nil {
+		return nil, err
+	}
 
 	return p, nil
+}
+
+func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
+	for i, _ := range packet.Inputs {
+		vin := t.inputs[i]
+
+		addrType, err := address.GetAddressType(vin.Address, t.params)
+		if err != nil {
+			return err
+		}
+
+		// Set the WitnessUtxo or NonWitnessUtxo based on the address type
+		if addrType == types.P2WPKH || addrType == types.P2WSH || addrType == types.TAPROOT {
+			// For SegWit and Taproot, use WitnessUtxo
+			packet.Inputs[i].WitnessUtxo = &wire.TxOut{
+				Value: int64(vin.Amount),
+				// PkScript: []byte(vin.Prevout.(string)),
+			}
+		} else {
+			// For non-SegWit, we need to set full transaction for NonWitnessUtxo
+			rawTxBytes, err := t.client.GetRawTx(vin.Txid)
+			if err != nil {
+				return err
+			}
+			msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
+			if err != nil {
+				return err
+			}
+			packet.Inputs[i].NonWitnessUtxo = msgTx
+		}
+	}
+	return nil
 }

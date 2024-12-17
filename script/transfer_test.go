@@ -25,11 +25,11 @@ func TestEncodeTransferScript(t *testing.T) {
 		privKey, err := btcec.NewPrivateKey()
 		require.NoError(t, err)
 		pubKey := privKey.PubKey().SerializeUncompressed()
-		addr, err := address.PubKeyToAddr(pubKey, test.addrType, test.network)
+		addr, err := address.PubKeyToAddr(pubKey, test.addrType, param)
 		require.NoError(t, err)
 
 		// encode address to script
-		decodeAddr, err := address.DecodeAddress(addr, test.network)
+		decodeAddr, err := address.DecodeAddress(addr, param)
 		require.NoError(t, err)
 		script, err := EncodeTransferScript(decodeAddr)
 		require.NoError(t, err)
