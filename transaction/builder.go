@@ -25,10 +25,10 @@ type TxBuilder struct {
 	packet *psbt.Packet
 }
 
-func NewTxBuilder(cfg *chaincfg.Params, client *client.Client) *TxBuilder {
+func NewTxBuilder(client *client.Client) *TxBuilder {
 	return &TxBuilder{
 		version: wire.TxVersion,
-		params:  cfg,
+		params:  client.Params,
 		client:  client,
 	}
 }

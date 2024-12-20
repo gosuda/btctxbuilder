@@ -3,12 +3,10 @@ package transaction
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/rabbitprincess/btctxbuilder/client"
-	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func NewTransferTx(net types.Network, fromAddress string, toAddress map[string]int64, changeAddress string) (*psbt.Packet, error) {
-	c := client.NewClient(net)
-	builder := NewTxBuilder(types.GetParams(net), c)
+func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]int64, changeAddress string) (*psbt.Packet, error) {
+	builder := NewTxBuilder(c)
 
 	var toTotal int64
 	for _, amount := range toAddress {

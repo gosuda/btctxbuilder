@@ -12,7 +12,6 @@ import (
 )
 
 func PubKeyToAddr(publicKey []byte, addrType types.AddrType, params *chaincfg.Params) (address string, err error) {
-
 	switch addrType {
 	case types.P2PK:
 		addr, err := btcutil.NewAddressPubKey(publicKey, params)

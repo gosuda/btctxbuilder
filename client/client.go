@@ -19,18 +19,18 @@ const (
 func NewClient(net types.Network) *Client {
 	client := &Client{
 		http:   http.DefaultClient,
-		params: types.GetParams(net),
+		Params: types.GetParams(net),
 	}
 
 	switch net {
 	case types.BTC:
-		client.params = &chaincfg.MainNetParams
+		client.Params = &chaincfg.MainNetParams
 		client.url = ClientURL + "/api"
 	case types.BTC_Testnet3:
-		client.params = &chaincfg.RegressionNetParams
+		client.Params = &chaincfg.RegressionNetParams
 		client.url = ClientURL + "/testnet/api"
 	case types.BTC_Signet:
-		client.params = &chaincfg.SigNetParams
+		client.Params = &chaincfg.SigNetParams
 		client.url = ClientURL + "/signet/api"
 	}
 
@@ -38,7 +38,7 @@ func NewClient(net types.Network) *Client {
 }
 
 type Client struct {
-	params *chaincfg.Params
+	Params *chaincfg.Params
 	url    string
 
 	http *http.Client

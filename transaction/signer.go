@@ -14,7 +14,7 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func SignTx(net types.Network, psbtRaw, privateKey []byte) (*psbt.Packet, error) {
+func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 	chain := types.GetParams(net)
 
 	priv, _ := btcec.PrivKeyFromBytes(privateKey)
@@ -36,13 +36,9 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) (*psbt.Packet, error)
 	prevOutputFetcher := PsbtPrevOutputFetcher(packet)
 
 	for i, input := range packet.Inputs {
-		scriptClass, _, _, err := txscript.ExtractPkScriptAddrs(input.WitnessUtxo.PkScript, chain)
-		if err != nil {
-			return nil, err
-		}
 
 		// Extract previous transaction output information
-		if len(input.WitnessUtxo.PkScript) == 0 && input.NonWitnessUtxo == nil {
+		if input.WitnessUtxo == nil && input.NonWitnessUtxo == nil {
 			return nil, fmt.Errorf("missing input UTXO information for input %d", i)
 		}
 
@@ -59,6 +55,11 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) (*psbt.Packet, error)
 			return nil, fmt.Errorf("could not determine prevOut for input %d", i)
 		}
 		_ = prevOutValue
+
+		scriptClass, _, _, err := txscript.ExtractPkScriptAddrs(pkScript, chain)
+		if err != nil {
+			return nil, err
+		}
 
 		switch scriptClass {
 		case txscript.WitnessV1TaprootTy: // P2TR
@@ -86,14 +87,8 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) (*psbt.Packet, error)
 
 		err = psbt.Finalize(packet, i)
 		if err != nil {
+			return nil, err
 		}
-
-		// success, err := updater.Sign(i, sig, pub.SerializeCompressed(), nil, nil)
-		// if err != nil {
-		// 	return nil, err
-		// } else if success != psbt.SignSuccesful {
-		// 	return nil, fmt.Errorf("signing failed, code: %d", success)
-		// }
 	}
 
 	// validate and finalize
@@ -102,7 +97,17 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) (*psbt.Packet, error)
 		return nil, err
 	}
 
-	return packet, nil
+	signedTx, err := psbt.Extract(packet)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err := signedTx.Serialize(&buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *btcec.PrivateKey) error {

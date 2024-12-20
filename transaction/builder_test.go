@@ -16,7 +16,7 @@ func TestSignTx(t *testing.T) {
 	// legacy address
 	net := types.BTC_Testnet3
 	client := newClient(t, net)
-	txBuilder := NewTxBuilder(types.GetParams(net), client)
+	txBuilder := NewTxBuilder(client)
 	txBuilder.inputs.AddInputTransfer("c44a7f98434e5e875a573339f77d36022c79c525771fa88c72fa53f3a55eeaf7", 1, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", 1488430)
 	txBuilder.outputs.AddOutputTransfer("mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", 1488200)
 	// psbt, err := txBuilder.Build()

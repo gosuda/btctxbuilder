@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,18 +23,28 @@ func TestTransfer(t *testing.T) {
 	var toAmount int64 = 1000
 
 	net := types.BTC_Signet
-	packet, err := NewTransferTx(net, fromAddress, map[string]int64{toAddress: toAmount}, fromAddress)
+	btcclient := client.NewClient(net)
+	psbtPacket, err := NewTransferTx(btcclient, fromAddress, map[string]int64{toAddress: toAmount}, fromAddress)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	err = packet.Serialize(&buf)
+	err = psbtPacket.Serialize(&buf)
 	require.NoError(t, err)
 	psbtRaw := buf.Bytes()
 
-	signedPsbt, err := SignTx(net, psbtRaw, fromPrivKey)
+	signedTxRaw, err := SignTx(net, psbtRaw, fromPrivKey)
 	require.NoError(t, err)
 
-	jsonPsbt, _ := json.MarshalIndent(signedPsbt, "", "\t")
-	fmt.Println(jsonPsbt)
+	signedTxHex := hex.EncodeToString(signedTxRaw)
+	fmt.Println(signedTxHex)
 
+	// txid, err := btcclient.BroadcastTx(signedTxHex)
+	// require.NoError(t, err)
+	// fmt.Println("txid:", txid)
+
+	newTx, err := client.DecodeRawTransaction(signedTxRaw)
+	require.NoError(t, err)
+
+	jsonNewTx, _ := json.MarshalIndent(newTx, "", "\t")
+	fmt.Println(string(jsonNewTx))
 }
