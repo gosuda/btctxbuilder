@@ -6,9 +6,9 @@ import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/address"
 	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
 type TxBuilder struct {
@@ -19,7 +19,7 @@ type TxBuilder struct {
 	inputs  TxInputs
 	outputs TxOutputs
 
-	changeAddress string
+	fundAddress string
 
 	msgTx  *wire.MsgTx
 	packet *psbt.Packet
@@ -58,9 +58,11 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		t.msgTx.AddTxOut(out)
 	}
 
-	err = t.FundRawTransaction()
-	if err != nil {
-		return nil, err
+	if t.fundAddress != "" {
+		err = t.FundRawTransaction()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	p, err := psbt.NewFromUnsignedTx(t.msgTx)
@@ -80,7 +82,7 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 	for i, _ := range packet.Inputs {
 		vin := t.inputs[i]
 
-		addrType, err := address.GetAddressType(vin.Address, t.params)
+		addrType, err := types.GetAddressType(vin.Address, t.params)
 		if err != nil {
 			return err
 		}
@@ -89,8 +91,8 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 		if addrType == types.P2WPKH || addrType == types.P2WSH || addrType == types.TAPROOT {
 			// For SegWit and Taproot, use WitnessUtxo
 			packet.Inputs[i].WitnessUtxo = &wire.TxOut{
-				Value: int64(vin.Amount),
-				// PkScript: []byte(vin.Prevout.(string)),
+				Value:    int64(vin.Amount),
+				PkScript: utils.MustDecode(vin.Prevout.Scriptpubkey),
 			}
 		} else {
 			// For non-SegWit, we need to set full transaction for NonWitnessUtxo

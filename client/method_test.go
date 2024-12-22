@@ -48,7 +48,7 @@ func TestGetBestBlock(t *testing.T) {
 // v1_p2tr : dcf80b086238982841bfc382a5a567c8f6898878db44d9da0d3726edc7bb7211
 func TestGetTx(t *testing.T) {
 	client := NewClient(types.BTC)
-	tx, err := client.GetTx("ef796f3cef041768d37a34a469d72e5c91de568f963eae6daf3480fe8405e2ed")
+	tx, err := client.GetTx("6216b12925f9bf817679e4cbaae35e1f5b8da997dc8b12603c6de7dd965af5c1")
 	require.NoError(t, err)
 
 	txJson, _ := json.MarshalIndent(tx, "", "\t")
@@ -67,6 +67,15 @@ func TestGetTx(t *testing.T) {
 		fmt.Println("vin script sig asm :", vin.ScriptsigAsm)
 		fmt.Println("vin witness :", vin.Witness)
 		fmt.Println("vin sequence :", vin.Sequence)
+		fmt.Println()
+	}
+
+	for _, vout := range tx.Vout {
+		fmt.Println("vout scriptpubkey :", vout.Scriptpubkey)
+		fmt.Println("vout scriptpubkey asm :", vout.ScriptpubkeyAsm)
+		fmt.Println("vout scriptpubkey type :", vout.ScriptpubkeyType)
+		fmt.Println("vout scriptpubkey address :", vout.ScriptpubkeyAddress)
+		fmt.Println("vout value :", vout.Value)
 		fmt.Println()
 	}
 
@@ -94,16 +103,27 @@ func TestFeeEstimate(t *testing.T) {
 
 func TestBroadCastTx(t *testing.T) {
 	client := NewClient(types.BTC)
-	raw, err := hex.DecodeString("0100000000010181318803dc1a178fce37d628cf832e8bb18e94492cf109caa232c40f9e68c2f20100000000ffffffff02404c1f0400000000160014973d7c4a508283a3727aa0c512594a24bfd99824d2f17d0500000000220020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d040047304402207c49f592a903ba568afe0b58ce76a76853a5af993907c1c20b11b38c20f4a566022042105e7baf2565c59d119dd763b70e30f720943960d6e6eb21ca16afdefc18f80147304402201ebb6849245a4b8e67c9ac411f613442b7f5515ad0027e91fa36e341462aa2ac02201d0b04731ea7e47142ec86605c1d3a67528a347ab22d41a62e0371a9555e17e4016952210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae00000000")
+	tx := "01000000013eecd16ec82a309158d8f3ffc33d32534deb68e9ab688883595e91718dfe494f010000006a47304402200467bf0d8b81c69255b71606bcb126e73cf6675c9b7ecb896a1c40d2a67071ab022012d67ee324dd27ca1f8824a9cf329e5158523398574db1dc5ddefb36c1e7616e01210248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925cffffffff02e803000000000000225120fafcfa7a1cd0a250480b9b273779babadaee7c1b2c76b0b5b2a3b195b8d862a7e81c0000000000001976a914eca14b26ef6056bf1011137061a5ffdbecba4c6188ac00000000"
+	txRaw, err := hex.DecodeString(tx)
 	require.NoError(t, err)
-	fmt.Println(string(raw))
+	// fmt.Println(string(raw))
 
-	tx := "0100000000010181318803dc1a178fce37d628cf832e8bb18e94492cf109caa232c40f9e68c2f20100000000ffffffff02404c1f0400000000160014973d7c4a508283a3727aa0c512594a24bfd99824d2f17d0500000000220020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d040047304402207c49f592a903ba568afe0b58ce76a76853a5af993907c1c20b11b38c20f4a566022042105e7baf2565c59d119dd763b70e30f720943960d6e6eb21ca16afdefc18f80147304402201ebb6849245a4b8e67c9ac411f613442b7f5515ad0027e91fa36e341462aa2ac02201d0b04731ea7e47142ec86605c1d3a67528a347ab22d41a62e0371a9555e17e4016952210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae00000000"
-	rawTx, err := DecodeRawTransaction(raw)
+	rawTx, err := DecodeRawTransaction(txRaw)
 	require.NoError(t, err)
-	fmt.Println(rawTx)
+	fmt.Println("txid :", rawTx.TxID())
+	for _, txIn := range rawTx.TxIn {
+		fmt.Println("\tvin hash  :", txIn.PreviousOutPoint.Hash)
+		fmt.Println("\tvin index :", txIn.PreviousOutPoint.Index)
+		fmt.Println("\tvin sig :", txIn.SignatureScript)
+		fmt.Println("\tvin witness :", txIn.Witness)
+		fmt.Println("\tvin sequence :", txIn.Sequence)
+	}
+	for _, txOut := range rawTx.TxOut {
+		fmt.Println("\tvout script :", txOut.PkScript)
+		fmt.Println("\tvout value  :", txOut.Value)
+	}
 
-	hash, err := client.BroadcastTx(tx)
+	res, err := client.BroadcastTx(tx)
 	require.NoError(t, err)
-	fmt.Println("hash:", hash)
+	fmt.Println("result:", res)
 }

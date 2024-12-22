@@ -30,7 +30,7 @@ func (t *TxBuilder) SufficentFunds() bool {
 }
 
 func (t *TxBuilder) FundRawTransaction() error {
-	changeAddressBTC, err := btcutil.DecodeAddress(t.changeAddress, t.params)
+	changeAddressBTC, err := btcutil.DecodeAddress(t.fundAddress, t.params)
 	if err != nil {
 		return err
 	}
@@ -74,6 +74,7 @@ func EstimateTxFee(feeRate float64, ins []*wire.TxIn, outs []*wire.TxOut, change
 		return 0, err
 	}
 	estimateFee := txrules.FeeForSerializeSize(feeRatePerKb, vSize)
+	estimateFee *= 400
 	return estimateFee, nil
 }
 

@@ -27,29 +27,29 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 
 	// create inputs
 	for _, utxo := range selected {
-		rawTxBytes, err := builder.client.GetRawTx(utxo.Txid)
-		if err != nil {
-			return nil, err
-		}
-		msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
-		if err != nil {
-			return nil, err
-		}
-		_ = msgTx
+		// rawTxBytes, err := builder.client.GetRawTx(utxo.Txid)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// _ = msgTx
 		// vout := msgTx.TxOut[utxo.Vout]
 		builder.inputs.AddInputTransfer(utxo.Txid, utxo.Vout, fromAddress, utxo.Value)
 	}
 
 	// create outputs
 	for address, amount := range toAddress {
-		builder.outputs.AddOutput(address, amount)
+		builder.outputs.AddOutputTransfer(c.Params, address, amount)
 	}
 
 	// fund outputs
 	if changeAddress == "" {
-		builder.changeAddress = fromAddress
+		builder.fundAddress = fromAddress
 	} else {
-		builder.changeAddress = changeAddress
+		builder.fundAddress = changeAddress
 	}
 
 	return builder.Build()

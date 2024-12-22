@@ -2,10 +2,11 @@ package transaction
 
 import (
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/rabbitprincess/btctxbuilder/script"
 	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
 type TxInput struct {
@@ -61,21 +62,22 @@ func (t *TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
 	return outpoints, nSequences, nil
 }
 
-type TxOutputs []*types.Vout
-
-func (t *TxOutputs) AddOutputTransfer(address string, amount int64) error {
-	vout := &types.Vout{
-		Address: address,
-		Amount:  btcutil.Amount(amount),
-	}
-	*t = append(*t, vout)
-	return nil
+type TxOutput struct {
+	Address btcutil.Address
+	Amount  btcutil.Amount
 }
 
-func (t *TxOutputs) AddOutput(address string, amount int64) error {
-	vout := &types.Vout{}
-	vout.Address = address
-	vout.Amount = btcutil.Amount(amount)
+type TxOutputs []*TxOutput
+
+func (t *TxOutputs) AddOutputTransfer(params *chaincfg.Params, addr string, amount int64) error {
+	rawAddr, err := types.DecodeAddress(addr, params)
+	if err != nil {
+		return err
+	}
+	vout := &TxOutput{
+		Address: rawAddr,
+		Amount:  btcutil.Amount(amount),
+	}
 	*t = append(*t, vout)
 	return nil
 }
@@ -91,7 +93,7 @@ func (t *TxOutputs) AmountTotal() btcutil.Amount {
 func (t *TxOutputs) ToWire() ([]*wire.TxOut, error) {
 	txOuts := make([]*wire.TxOut, 0, len(*t))
 	for _, out := range *t {
-		pkScript, err := utils.Decode(out.Scriptpubkey)
+		pkScript, err := script.EncodeTransferScript(out.Address)
 		if err != nil {
 			return nil, err
 		}

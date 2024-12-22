@@ -45,11 +45,13 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 		var prevOutValue int64
 		var pkScript []byte
 		if input.WitnessUtxo != nil {
-			prevOutValue = input.WitnessUtxo.Value
+			updater.AddInWitnessUtxo(input.WitnessUtxo, i)
+			// prevOutValue = input.WitnessUtxo.Value
 			pkScript = input.WitnessUtxo.PkScript
 		} else if input.NonWitnessUtxo != nil {
-			prevOut := input.NonWitnessUtxo.TxOut[i]
-			prevOutValue = prevOut.Value
+			index := packet.UnsignedTx.TxIn[i].PreviousOutPoint.Index
+			prevOut := input.NonWitnessUtxo.TxOut[index]
+			// prevOutValue = prevOut.Value
 			pkScript = prevOut.PkScript
 		} else {
 			return nil, fmt.Errorf("could not determine prevOut for input %d", i)
@@ -84,7 +86,6 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		err = psbt.Finalize(packet, i)
 		if err != nil {
 			return nil, err

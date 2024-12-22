@@ -71,7 +71,6 @@ func PsbtPrevOutputFetcher(packet *psbt.Packet) *txscript.MultiPrevOutFetcher {
 				txIn.PreviousOutPoint,
 				in.NonWitnessUtxo.TxOut[prevIndex],
 			)
-
 			continue
 		}
 
