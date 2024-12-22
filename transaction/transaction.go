@@ -27,7 +27,7 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 
 	// create inputs
 	for _, utxo := range selected {
-		if err = builder.inputs.AddInputTransfer(utxo.Txid, utxo.Vout, fromAddress, utxo.Value); err != nil {
+		if err = builder.inputs.AddInput(c, utxo.Txid, utxo.Vout, utxo.Value, fromAddress); err != nil {
 			return nil, err
 		}
 	}

@@ -42,20 +42,28 @@ func TestPubKeyToAddr(t *testing.T) {
 func TestAddrType(t *testing.T) {
 	network := BTC_Testnet3
 	params := GetParams(network)
-	p2pkh, err := GetAddressType("mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", params)
+	addr, err := DecodeAddress("mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", params)
+	require.NoError(t, err)
+	p2pkh, err := GetAddressType(addr)
 	require.NoError(t, err)
 	require.Equal(t, P2PKH, p2pkh)
 
-	p2wpkh, err := GetAddressType("tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", params)
+	addr, err = DecodeAddress("tb1qtsq9c4fje6qsmheql8gajwtrrdrs38kdzeersc", params)
+	require.NoError(t, err)
+	p2wpkh, err := GetAddressType(addr)
 	require.NoError(t, err)
 	require.Equal(t, P2WPKH, p2wpkh)
 
-	nestedP2wpkh, err := GetAddressType("2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", params)
+	addr, err = DecodeAddress("2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", params)
+	require.NoError(t, err)
+	nestedP2wpkh, err := GetAddressType(addr)
 	require.NoError(t, err)
 	// p2wpkh-nested = p2sh
 	require.Equal(t, P2SH, nestedP2wpkh)
 
-	p2tr, err := GetAddressType("tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", params)
+	addr, err = DecodeAddress("tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", params)
+	require.NoError(t, err)
+	p2tr, err := GetAddressType(addr)
 	require.NoError(t, err)
 	require.Equal(t, TAPROOT, p2tr)
 

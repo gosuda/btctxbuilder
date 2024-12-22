@@ -16,7 +16,7 @@ func TestSignPsbtTx(t *testing.T) {
 
 	c := client.NewClient(networkType)
 	txBuild := NewTxBuilder(c)
-	txBuild.inputs.AddInputTransfer("0b2c23f5c2e6326c90cfa1d3925b0d83f4b08035ca6af8fd8f606385dfbc5822", 1, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 0)
+	txBuild.inputs.AddInput(nil, "0b2c23f5c2e6326c90cfa1d3925b0d83f4b08035ca6af8fd8f606385dfbc5822", 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
 	txBuild.outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
 	txBuild.outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
 	pubKeyMap := make(map[int]string)

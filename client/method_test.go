@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -104,11 +103,8 @@ func TestFeeEstimate(t *testing.T) {
 func TestBroadCastTx(t *testing.T) {
 	client := NewClient(types.BTC)
 	tx := "01000000013eecd16ec82a309158d8f3ffc33d32534deb68e9ab688883595e91718dfe494f010000006a47304402200467bf0d8b81c69255b71606bcb126e73cf6675c9b7ecb896a1c40d2a67071ab022012d67ee324dd27ca1f8824a9cf329e5158523398574db1dc5ddefb36c1e7616e01210248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925cffffffff02e803000000000000225120fafcfa7a1cd0a250480b9b273779babadaee7c1b2c76b0b5b2a3b195b8d862a7e81c0000000000001976a914eca14b26ef6056bf1011137061a5ffdbecba4c6188ac00000000"
-	txRaw, err := hex.DecodeString(tx)
-	require.NoError(t, err)
-	// fmt.Println(string(raw))
 
-	rawTx, err := DecodeRawTransaction(txRaw)
+	rawTx, err := DecodeRawTransaction(tx)
 	require.NoError(t, err)
 	fmt.Println("txid :", rawTx.TxID())
 	for _, txIn := range rawTx.TxIn {

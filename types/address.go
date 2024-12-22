@@ -138,11 +138,7 @@ func DecodeAddress(address string, params *chaincfg.Params) (addr btcutil.Addres
 	return btcutil.DecodeAddress(address, params)
 }
 
-func GetAddressType(address string, params *chaincfg.Params) (addrType AddrType, err error) {
-	addr, err := DecodeAddress(address, params)
-	if err != nil {
-		return Invalid, err
-	}
+func GetAddressType(addr btcutil.Address) (addrType AddrType, err error) {
 
 	switch addr.(type) {
 	case *btcutil.AddressPubKey:

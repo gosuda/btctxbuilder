@@ -59,7 +59,7 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		return nil, fmt.Errorf("PSBT packet must contain at least one input or output")
 	}
 
-	outpoints, nSequences, err := t.inputs.ToWire()
+	txIns, err := t.inputs.ToWire()
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +69,8 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 	}
 
 	t.msgTx = wire.NewMsgTx(int32(t.version))
-	for i, in := range outpoints {
-		t.msgTx.AddTxIn(&wire.TxIn{
-			PreviousOutPoint: *in,
-			Sequence:         nSequences[i],
-		})
+	for _, in := range txIns {
+		t.msgTx.AddTxIn(in)
 	}
 	for _, out := range outputs {
 		t.msgTx.AddTxOut(out)
@@ -103,7 +100,7 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 	for i, _ := range packet.Inputs {
 		vin := t.inputs[i]
 
-		addrType, err := types.GetAddressType(vin.Address, t.params)
+		addrType, err := types.GetAddressType(vin.Address)
 		if err != nil {
 			return err
 		}
@@ -116,16 +113,7 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 				PkScript: utils.MustDecode(vin.Prevout.Scriptpubkey),
 			}
 		} else {
-			// For non-SegWit, we need to set full transaction for NonWitnessUtxo
-			rawTxBytes, err := t.client.GetRawTx(vin.Txid)
-			if err != nil {
-				return err
-			}
-			msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
-			if err != nil {
-				return err
-			}
-			packet.Inputs[i].NonWitnessUtxo = msgTx
+			packet.Inputs[i].NonWitnessUtxo = vin.tx
 		}
 	}
 	return nil

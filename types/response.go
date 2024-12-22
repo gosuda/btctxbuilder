@@ -39,10 +39,6 @@ type Vin struct {
 	Witness      []string `json:"witness"`
 	IsCoinbase   bool     `json:"is_coinbase"`
 	Sequence     int64    `json:"sequence"`
-
-	// calculated fields
-	Amount  btcutil.Amount `json:"-"`
-	Address string         `json:"-"`
 }
 
 type Vout struct {

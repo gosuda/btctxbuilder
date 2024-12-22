@@ -1,60 +1,91 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/script"
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-type TxInputs []*types.Vin
+type TxInput struct {
+	tx *wire.MsgTx
+	*types.Vin
 
-func (t *TxInputs) AddInputTransfer(txid string, vout uint32, address string, amount int64) error {
+	Amount        btcutil.Amount
+	Address       btcutil.Address
+	RedeemScript  []byte
+	WitnessScript []byte
+}
+
+type TxInputs []*TxInput
+
+func (t *TxInputs) AddInput(c *client.Client, txid string, vout uint32, amount int64, address string) error {
+	tx, err := c.GetTx(txid)
+	if err != nil {
+		return err
+	}
+	if vout >= uint32(len(tx.Vout)) {
+		return fmt.Errorf("vout %d out of range", vout)
+	}
+	prev := &tx.Vout[vout]
+
+	rawTx, err := c.GetRawTx(txid)
+	if err != nil {
+		return err
+	}
+	msgTx, err := client.DecodeRawTransaction(rawTx)
+	if err != nil {
+		return err
+	}
+
+	btcAmount := btcutil.Amount(amount)
+	btcAddress, err := types.DecodeAddress(address, c.GetParams())
+	if err != nil {
+		return err
+	}
+
 	vin := &types.Vin{
 		Txid:    txid,
 		Vout:    vout,
-		Amount:  btcutil.Amount(amount),
-		Address: address,
+		Prevout: prev,
 	}
-	*t = append(*t, vin)
-	return nil
-}
 
-func (t *TxInputs) AddInput(vin *types.Vin, address string, amount int64) error {
-
-	vin.Address = address
-	vin.Amount = btcutil.Amount(amount)
-	*t = append(*t, vin)
+	*t = append(*t, &TxInput{
+		tx:      msgTx,
+		Vin:     vin,
+		Amount:  btcAmount,
+		Address: btcAddress,
+	})
 	return nil
 }
 
 func (t *TxInputs) AmountTotal() btcutil.Amount {
 	var total btcutil.Amount
-	for _, vin := range *t {
-		total += vin.Amount
+	for _, input := range *t {
+		total += input.Amount
 	}
 	return total
 }
 
-func (t *TxInputs) ToWire() ([]*wire.OutPoint, []uint32, error) {
-	outpoints := make([]*wire.OutPoint, 0, len(*t))
-	nSequences := make([]uint32, 0, len(*t))
+func (t *TxInputs) ToWire() ([]*wire.TxIn, error) {
+	var txIns []*wire.TxIn = make([]*wire.TxIn, 0, len(*t))
 	for _, in := range *t {
 		txHash, err := chainhash.NewHashFromStr(in.Txid)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		witness := make([][]byte, 0, len(in.Witness))
-		for _, w := range in.Witness {
-			witness = append(witness, []byte(w))
-		}
+		outPoint := wire.NewOutPoint(txHash, in.Vout)
 
-		outpoints = append(outpoints, wire.NewOutPoint(txHash, in.Vout))
-		nSequences = append(nSequences, wire.MaxTxInSequenceNum)
+		txIn := wire.NewTxIn(outPoint, nil, nil)
+		txIns = append(txIns, txIn)
 	}
-	return outpoints, nSequences, nil
+
+	return txIns, nil
 }
 
 type TxOutput struct {

@@ -8,10 +8,13 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
-func DecodeRawTransaction(rawTxBytes []byte) (*wire.MsgTx, error) {
+func DecodeRawTransaction(rawTx string) (*wire.MsgTx, error) {
 	// Parse the raw transaction
-	if utils.IsHex(string(rawTxBytes)) {
-		rawTxBytes = utils.MustDecode(string(rawTxBytes))
+	var rawTxBytes []byte
+	if utils.IsHex(rawTx) {
+		rawTxBytes = utils.MustDecode(rawTx)
+	} else {
+		rawTxBytes = []byte(rawTx)
 	}
 
 	msgTx := wire.NewMsgTx(wire.TxVersion)
