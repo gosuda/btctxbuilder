@@ -5,7 +5,7 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/client"
 )
 
-func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]int64, changeAddress string) (*psbt.Packet, error) {
+func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
 	builder := NewTxBuilder(c)
 
 	var toTotal int64
@@ -27,30 +27,25 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 
 	// create inputs
 	for _, utxo := range selected {
-		// rawTxBytes, err := builder.client.GetRawTx(utxo.Txid)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// msgTx, err := client.DecodeRawTransaction([]byte(rawTxBytes))
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// _ = msgTx
-		// vout := msgTx.TxOut[utxo.Vout]
-		builder.inputs.AddInputTransfer(utxo.Txid, utxo.Vout, fromAddress, utxo.Value)
+		if err = builder.inputs.AddInputTransfer(utxo.Txid, utxo.Vout, fromAddress, utxo.Value); err != nil {
+			return nil, err
+		}
 	}
 
 	// create outputs
 	for address, amount := range toAddress {
-		builder.outputs.AddOutputTransfer(c.Params, address, amount)
+		if err = builder.outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
+			return nil, err
+		}
 	}
 
-	// fund outputs
-	if changeAddress == "" {
+	// fund fee outputs
+	if fundAddress == "" {
 		builder.fundAddress = fromAddress
 	} else {
-		builder.fundAddress = changeAddress
+		builder.fundAddress = fundAddress
 	}
 
+	// build psbt from inputs and outputs
 	return builder.Build()
 }

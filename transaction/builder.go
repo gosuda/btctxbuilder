@@ -11,6 +11,22 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
+type BuilderOpt func(*TxBuilder) error
+
+func WithVersion(version int) BuilderOpt {
+	return func(t *TxBuilder) error {
+		t.version = version
+		return nil
+	}
+}
+
+func WithFundAddress(address string) BuilderOpt {
+	return func(t *TxBuilder) error {
+		t.fundAddress = address
+		return nil
+	}
+}
+
 type TxBuilder struct {
 	version int
 	client  *client.Client
@@ -25,12 +41,17 @@ type TxBuilder struct {
 	packet *psbt.Packet
 }
 
-func NewTxBuilder(client *client.Client) *TxBuilder {
-	return &TxBuilder{
+func NewTxBuilder(client *client.Client, opts ...BuilderOpt) *TxBuilder {
+	builder := &TxBuilder{
 		version: wire.TxVersion,
-		params:  client.Params,
+		params:  client.GetParams(),
 		client:  client,
 	}
+
+	for _, opt := range opts {
+		opt(builder)
+	}
+	return builder
 }
 
 func (t *TxBuilder) Build() (*psbt.Packet, error) {

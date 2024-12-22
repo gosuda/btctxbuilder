@@ -74,7 +74,6 @@ func EstimateTxFee(feeRate float64, ins []*wire.TxIn, outs []*wire.TxOut, change
 		return 0, err
 	}
 	estimateFee := txrules.FeeForSerializeSize(feeRatePerKb, vSize)
-	estimateFee *= 400
 	return estimateFee, nil
 }
 

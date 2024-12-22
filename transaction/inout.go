@@ -9,11 +9,6 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-type TxInput struct {
-	NonWitnessUtxo *wire.MsgTx
-	WitnessUtxo    *wire.TxOut
-}
-
 type TxInputs []*types.Vin
 
 func (t *TxInputs) AddInputTransfer(txid string, vout uint32, address string, amount int64) error {
