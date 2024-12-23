@@ -84,3 +84,11 @@ func PsbtPrevOutputFetcher(packet *psbt.Packet) *txscript.MultiPrevOutFetcher {
 
 	return fetcher
 }
+
+func ValidateInputSignatures(packet *psbt.Packet) error {
+	err := psbt.InputsReadyToSign(packet)
+	if err != nil {
+		return err
+	}
+	return nil
+}

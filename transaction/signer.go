@@ -53,8 +53,6 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 			prevOut := input.NonWitnessUtxo.TxOut[index]
 			// prevOutValue = prevOut.Value
 			pkScript = prevOut.PkScript
-		} else {
-			return nil, fmt.Errorf("could not determine prevOut for input %d", i)
 		}
 		_ = prevOutValue
 
@@ -71,13 +69,13 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 		case txscript.PubKeyHashTy: // P2PKH
 			err = signInputP2PKH(updater, i, pkScript, priv)
 		case txscript.ScriptHashTy: // P2SH
-
+			panic("not supported yet")
 		case txscript.WitnessV0PubKeyHashTy: // P2WPKH
-
+			err = signInputP2WPKH(updater, i, pkScript, input.WitnessUtxo.Value, priv, prevOutputFetcher)
 		case txscript.WitnessV0ScriptHashTy: // P2WSH
-
+			panic("not supported yet")
 		case txscript.MultiSigTy: // Multisig
-
+			panic("not supported yet")
 		case txscript.NullDataTy: // OP_RETURN
 
 		default:
@@ -152,8 +150,22 @@ func signInputP2PKH(updater *psbt.Updater, i int, prevPkScript []byte, privKey *
 	return nil
 }
 
-func signInputP2WPKH(updater *psbt.Updater, i int, prevPkScript []byte, amt int64, privKey *btcec.PrivateKey, hashType txscript.SigHashType) error {
+func signInputP2WPKH(updater *psbt.Updater, i int, prevPkScript []byte, amount int64, privKey *btcec.PrivateKey, prevOutFetcher *txscript.MultiPrevOutFetcher) error {
+	// TODO : hashtype always all in p2wpkh
+	hashType := txscript.SigHashAll
+	if err := updater.AddInSighashType(hashType, i); err != nil {
+		return err
+	}
 
+	signature, err := txscript.RawTxInWitnessSignature(updater.Upsbt.UnsignedTx, txscript.NewTxSigHashes(updater.Upsbt.UnsignedTx, prevOutFetcher), i, amount, prevPkScript, hashType, privKey)
+	if err != nil {
+		return err
+	}
+	if signOutcome, err := updater.Sign(i, signature, privKey.PubKey().SerializeCompressed(), nil, nil); err != nil {
+		return err
+	} else if signOutcome != psbt.SignSuccesful {
+		return fmt.Errorf("signing failed, code: %d", signOutcome)
+	}
 	return nil
 }
 

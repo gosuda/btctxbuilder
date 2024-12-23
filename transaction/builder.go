@@ -97,7 +97,7 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 }
 
 func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
-	for i, _ := range packet.Inputs {
+	for i := range packet.Inputs {
 		vin := t.inputs[i]
 
 		addrType := types.GetAddressType(vin.Address)
@@ -115,6 +115,13 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 		} else {
 			packet.Inputs[i].NonWitnessUtxo = vin.tx
 		}
+		if vin.RedeemScript != nil {
+			packet.Inputs[i].RedeemScript = vin.RedeemScript
+		}
+		if vin.WitnessScript != nil {
+			packet.Inputs[i].WitnessScript = vin.WitnessScript
+		}
+
 	}
 	return nil
 }

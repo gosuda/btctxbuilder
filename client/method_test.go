@@ -47,7 +47,7 @@ func TestGetBestBlock(t *testing.T) {
 // v1_p2tr : dcf80b086238982841bfc382a5a567c8f6898878db44d9da0d3726edc7bb7211
 func TestGetTx(t *testing.T) {
 	client := NewClient(types.BTC)
-	tx, err := client.GetTx("6216b12925f9bf817679e4cbaae35e1f5b8da997dc8b12603c6de7dd965af5c1")
+	tx, err := client.GetTx("6c9f507a64cfec9ef96de41680af40c84607d71b62eac7f7f2a406a597c8c582")
 	require.NoError(t, err)
 
 	txJson, _ := json.MarshalIndent(tx, "", "\t")
