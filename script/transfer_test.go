@@ -28,7 +28,7 @@ func TestEncodeTransferScript(t *testing.T) {
 		require.NoError(t, err)
 
 		// encode address to script
-		decodeAddr, err := types.DecodeAddress(addr, param)
+		decodeAddr, _, err := types.DecodeAddress(addr, param)
 		require.NoError(t, err)
 		script, err := EncodeTransferScript(decodeAddr)
 		require.NoError(t, err)

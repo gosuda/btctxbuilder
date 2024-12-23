@@ -44,7 +44,7 @@ func (t *TxInputs) AddInput(c *client.Client, txid string, vout uint32, amount i
 	}
 
 	btcAmount := btcutil.Amount(amount)
-	btcAddress, err := types.DecodeAddress(address, c.GetParams())
+	btcAddress, _, err := types.DecodeAddress(address, c.GetParams())
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ type TxOutput struct {
 type TxOutputs []*TxOutput
 
 func (t *TxOutputs) AddOutputTransfer(params *chaincfg.Params, addr string, amount int64) error {
-	rawAddr, err := types.DecodeAddress(addr, params)
+	rawAddr, _, err := types.DecodeAddress(addr, params)
 	if err != nil {
 		return err
 	}

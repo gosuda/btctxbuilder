@@ -100,9 +100,9 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 	for i, _ := range packet.Inputs {
 		vin := t.inputs[i]
 
-		addrType, err := types.GetAddressType(vin.Address)
-		if err != nil {
-			return err
+		addrType := types.GetAddressType(vin.Address)
+		if addrType == types.Invalid {
+			return fmt.Errorf("invalid address type")
 		}
 
 		// Set the WitnessUtxo or NonWitnessUtxo based on the address type

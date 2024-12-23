@@ -134,26 +134,30 @@ func ScriptToAddr(script []byte, addrType AddrType, params *chaincfg.Params) (ad
 	}
 }
 
-func DecodeAddress(address string, params *chaincfg.Params) (addr btcutil.Address, err error) {
-	return btcutil.DecodeAddress(address, params)
+func DecodeAddress(address string, params *chaincfg.Params) (addr btcutil.Address, addrType AddrType, err error) {
+	addr, err = btcutil.DecodeAddress(address, params)
+	if err != nil {
+		return nil, Invalid, err
+	}
+
+	return addr, GetAddressType(addr), nil
 }
 
-func GetAddressType(addr btcutil.Address) (addrType AddrType, err error) {
-
+func GetAddressType(addr btcutil.Address) (addrType AddrType) {
 	switch addr.(type) {
 	case *btcutil.AddressPubKey:
-		return P2PK, nil
+		return P2PK
 	case *btcutil.AddressPubKeyHash:
-		return P2PKH, nil
+		return P2PKH
 	case *btcutil.AddressScriptHash:
-		return P2SH, nil
+		return P2SH
 	case *btcutil.AddressWitnessPubKeyHash:
-		return P2WPKH, nil
+		return P2WPKH
 	case *btcutil.AddressWitnessScriptHash:
-		return P2WSH, nil
+		return P2WSH
 	case *btcutil.AddressTaproot:
-		return TAPROOT, nil
+		return TAPROOT
 	default:
-		return Invalid, fmt.Errorf("unsupported address type: %T", addr)
+		return Invalid
 	}
 }
