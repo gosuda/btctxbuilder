@@ -26,12 +26,12 @@ func (t *TxBuilder) SufficentFunds() bool {
 		outSum += output.Amount
 	}
 
-	change := inSum - outSum
-	return change >= 0
+	fund := inSum - outSum
+	return fund >= 0
 }
 
 func (t *TxBuilder) FundRawTransaction() error {
-	changeAddressBTC, err := btcutil.DecodeAddress(t.fundAddress, t.params)
+	fundAddressBTC, err := btcutil.DecodeAddress(t.fundAddress, t.params)
 	if err != nil {
 		return err
 	}
@@ -42,35 +42,35 @@ func (t *TxBuilder) FundRawTransaction() error {
 		return err
 	}
 	feeRate := feeEstimate["6"]
-	feeAmount, err := EstimateTxFee(feeRate, t.inputs, t.msgTx.TxOut, changeAddressBTC)
+	feeAmount, err := EstimateTxFee(feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
 	if err != nil {
 		return err
 	}
 
-	// calculate change amount
+	// calculate fund amount
 	totalInput := t.inputs.AmountTotal()
 	totalOutput := t.outputs.AmountTotal()
-	change := totalInput - totalOutput - feeAmount
-	if change < 0 {
+	fund := totalInput - totalOutput - feeAmount
+	if fund < 0 {
 		return fmt.Errorf("insufficient funds, input: %d, output: %d, fee: %d", totalInput, totalOutput, feeAmount)
 	}
 
-	// add change output
-	if change > 0 {
-		pkScript, err := script.EncodeTransferScript(changeAddressBTC)
+	// add fund output
+	if fund > 0 {
+		pkScript, err := script.EncodeTransferScript(fundAddressBTC)
 		if err != nil {
 			return err
 		}
-		changeTxOut := wire.NewTxOut(int64(change), pkScript)
-		t.msgTx.TxOut = append(t.msgTx.TxOut, changeTxOut)
+		fundTxOut := wire.NewTxOut(int64(fund), pkScript)
+		t.msgTx.TxOut = append(t.msgTx.TxOut, fundTxOut)
 	}
 
 	return nil
 }
 
-func EstimateTxFee(feeRate float64, ins TxInputs, outs []*wire.TxOut, changeAddress btcutil.Address) (btcutil.Amount, error) {
+func EstimateTxFee(feeRate float64, ins TxInputs, outs []*wire.TxOut, fundAddress btcutil.Address) (btcutil.Amount, error) {
 	feeRatePerKb := btcutil.Amount(feeRate) * 1000
-	vSize, err := EstimateTxVirtualSize(ins, outs, changeAddress)
+	vSize, err := EstimateTxVirtualSize(ins, outs, fundAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -78,7 +78,7 @@ func EstimateTxFee(feeRate float64, ins TxInputs, outs []*wire.TxOut, changeAddr
 	return estimateFee, nil
 }
 
-func EstimateTxVirtualSize(ins TxInputs, outs []*wire.TxOut, changeAddress btcutil.Address) (vSize int, err error) {
+func EstimateTxVirtualSize(ins TxInputs, outs []*wire.TxOut, fundAddress btcutil.Address) (vSize int, err error) {
 	// TODO : Add support for p2sh, p2wsh
 	var nested, p2wpkh, p2tr, p2pkh int
 	for _, in := range ins {
@@ -93,18 +93,18 @@ func EstimateTxVirtualSize(ins TxInputs, outs []*wire.TxOut, changeAddress btcut
 			p2tr++
 		}
 	}
-	changeScriptSize, err := GetChangeScriptSize(changeAddress)
+	fundScriptSize, err := GetFundScriptSize(fundAddress)
 	if err != nil {
 		return 0, err
 	}
 
-	vSize = txsizes.EstimateVirtualSize(p2pkh, p2tr, p2wpkh, nested, outs, changeScriptSize)
+	vSize = txsizes.EstimateVirtualSize(p2pkh, p2tr, p2wpkh, nested, outs, fundScriptSize)
 	return vSize, nil
 }
 
-func GetChangeScriptSize(changeAddress btcutil.Address) (int, error) {
+func GetFundScriptSize(fundAddress btcutil.Address) (int, error) {
 	// Determine the script type and size
-	switch changeAddress.(type) {
+	switch fundAddress.(type) {
 	case *btcutil.AddressPubKeyHash: // P2PKH
 		return 25, nil // OP_DUP OP_HASH160 [20-byte HASH] OP_EQUALVERIFY OP_CHECKSIG
 	case *btcutil.AddressScriptHash: // P2SH
@@ -116,6 +116,6 @@ func GetChangeScriptSize(changeAddress btcutil.Address) (int, error) {
 	case *btcutil.AddressTaproot: // P2TR
 		return 34, nil // OP_1 [32-byte Taproot PubKey]
 	default:
-		return 0, fmt.Errorf("unsupported address type: %T", changeAddress)
+		return 0, fmt.Errorf("unsupported address type: %T", fundAddress)
 	}
 }
