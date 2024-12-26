@@ -1,29 +1,22 @@
 package transaction
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/psbt"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
-	chain := types.GetParams(net)
-
+func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*psbt.Packet, error) {
 	priv, _ := btcec.PrivKeyFromBytes(privateKey)
-	packet, err := psbt.NewFromRawBytes(bytes.NewReader(psbtRaw), false)
-	if err != nil {
-		return nil, err
-	}
-
-	err = psbt.InputsReadyToSign(packet)
+	err := psbt.InputsReadyToSign(packet)
 	if err != nil {
 		return nil, err
 	}
@@ -34,9 +27,7 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 	}
 
 	prevOutputFetcher := PsbtPrevOutputFetcher(packet)
-
 	for i, input := range packet.Inputs {
-
 		// Extract previous transaction output information
 		if input.WitnessUtxo == nil && input.NonWitnessUtxo == nil {
 			return nil, fmt.Errorf("missing input UTXO information for input %d", i)
@@ -95,18 +86,7 @@ func SignTx(net types.Network, psbtRaw, privateKey []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	signedTx, err := psbt.Extract(packet)
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	if err := signedTx.Serialize(&buf); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	return packet, nil
 }
 
 func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *btcec.PrivateKey) error {
@@ -131,15 +111,16 @@ func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *b
 
 func signInputP2PKH(updater *psbt.Updater, i int, prevPkScript []byte, privKey *btcec.PrivateKey) error {
 	// TODO : hashtype always all in p2pkh
-	hashType := txscript.SigHashAll
-	if err := updater.AddInSighashType(hashType, i); err != nil {
-		return err
-	}
+	// hashType := txscript.SigHashAll
+	// if err := updater.AddInSighashType(hashType, i); err != nil {
+	// 	return err
+	// }
 
-	signature, err := txscript.RawTxInSignature(updater.Upsbt.UnsignedTx, i, prevPkScript, hashType, privKey)
+	signature, err := txscript.RawTxInSignature(updater.Upsbt.UnsignedTx, i, prevPkScript, txscript.SigHashAll, privKey)
 	if err != nil {
 		return err
 	}
+	fmt.Println("signature", signature)
 
 	if signOutcome, err := updater.Sign(i, signature, privKey.PubKey().SerializeCompressed(), nil, nil); err != nil {
 		return err
@@ -264,16 +245,11 @@ func CheckDuplicateOfUpdater(updater *psbt.Updater, index int) {
 }
 
 // for verifying the signatures
-func ValidateTx(psbtRaw []byte) error {
-	// Decode PSBT
-	packet, err := psbt.NewFromRawBytes(bytes.NewReader(psbtRaw), false)
-	if err != nil {
-		return fmt.Errorf("failed to decode PSBT: %v", err)
-	}
+func VerifyTx(chain *chaincfg.Params, packet *psbt.Packet, pubkey *secp256k1.PublicKey) (bool, error) {
 	prevOutputFetcher := PsbtPrevOutputFetcher(packet)
 	for i, input := range packet.Inputs {
 		if input.WitnessUtxo == nil && input.NonWitnessUtxo == nil {
-			return fmt.Errorf("missing UTXO data for input %d", i)
+			return false, fmt.Errorf("missing UTXO data for input %d", i)
 		}
 
 		// Select UTXO script and value
@@ -288,22 +264,43 @@ func ValidateTx(psbtRaw []byte) error {
 			pkScript = prevOut.PkScript
 			value = prevOut.Value
 		}
-		// Validate each partial signature
-		for _, sig := range input.PartialSigs {
-			_ = sig
-			// Recreate script engine
-			engine, err := txscript.NewEngine(pkScript, packet.UnsignedTx, i, txscript.StandardVerifyFlags, nil, nil, value, prevOutputFetcher)
-			if err != nil {
-				return fmt.Errorf("failed to create script engine for input %d: %v", i, err)
-			}
+		_ = value
 
-			// Validate signature
-			if err := engine.Execute(); err != nil {
-				return fmt.Errorf("signature validation failed for input %d: %v", i, err)
+		sigHashes := txscript.NewTxSigHashes(packet.UnsignedTx, prevOutputFetcher)
+		scriptClass, _, _, err := txscript.ExtractPkScriptAddrs(pkScript, chain)
+		if err != nil {
+			return false, err
+		}
+		switch scriptClass {
+		case txscript.WitnessV1TaprootTy:
+			internalPubKey := schnorr.SerializePubKey(pubkey)
+			packet.Inputs[0].TaprootInternalKey = internalPubKey
+
+			sigHash, err := txscript.CalcTaprootSignatureHash(sigHashes, txscript.SigHashDefault, packet.UnsignedTx, i, prevOutputFetcher)
+			if err != nil {
+				return false, err
+			}
+			sig, err := schnorr.ParseSignature(packet.UnsignedTx.TxIn[0].Witness[0])
+			if err != nil {
+				return false, err
+			}
+			tweakedPublicKey := txscript.ComputeTaprootKeyNoScript(pubkey)
+			if !sig.Verify(sigHash, tweakedPublicKey) {
+				return false, fmt.Errorf("signature verification failed | %v", i)
+			}
+		case txscript.PubKeyTy, txscript.PubKeyHashTy:
+			sighash, err := txscript.CalcSignatureHash(pkScript, txscript.SigHashAll, packet.UnsignedTx, i)
+			sig, err := ecdsa.ParseSignature(input.WitnessScript)
+			if err != nil {
+				return false, err
+			}
+			valid := sig.Verify(sighash, pubkey)
+			if !valid {
+				return false, fmt.Errorf("signature verification failed | %v", i)
 			}
 		}
 	}
 
 	fmt.Println("All signatures are valid")
-	return nil
+	return true, nil
 }
