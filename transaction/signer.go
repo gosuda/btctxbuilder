@@ -120,7 +120,6 @@ func signInputP2PKH(updater *psbt.Updater, i int, prevPkScript []byte, privKey *
 	if err != nil {
 		return err
 	}
-	fmt.Println("signature", signature)
 
 	if signOutcome, err := updater.Sign(i, signature, privKey.PubKey().SerializeCompressed(), nil, nil); err != nil {
 		return err
