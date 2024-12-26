@@ -33,6 +33,10 @@ func (c *Client) GetRawTx(txid string) (string, error) {
 	return RequestGet[string](c, fmt.Sprintf("/tx/%s/raw", txid))
 }
 
+func (c *Client) GetAddress(address string) (*types.Address, error) {
+	return RequestGet[*types.Address](c, fmt.Sprintf("/address/%s", address))
+}
+
 func (c *Client) GetUTXO(address string) ([]*types.Utxo, error) {
 	return RequestGet[[]*types.Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }

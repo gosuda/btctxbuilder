@@ -62,3 +62,16 @@ type BlockStatus struct {
 }
 
 type FeeEstimate map[string]float64
+
+type Address struct {
+	Address      string       `json:"address"`
+	ChainStats   AddressStats `json:"chain_stats"`
+	MempoolStats AddressStats `json:"mempool_stats"`
+}
+type AddressStats struct {
+	FundedTxoCount int `json:"funded_txo_count"`
+	FundedTxoSum   int `json:"funded_txo_sum"`
+	SpentTxoCount  int `json:"spent_txo_count"`
+	SpentTxoSum    int `json:"spent_txo_sum"`
+	TxCount        int `json:"tx_count"`
+}

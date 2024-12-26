@@ -122,3 +122,20 @@ func TestBroadCastTx(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("result:", res)
 }
+
+// fromPrivKeyHex := "a6018c89646f3c7596516544602283135e8d6e5b31421e335b91b86ae9c76409"
+// fromPrivKey, _ := hex.DecodeString(fromPrivKeyHex)
+// fromPubKey := "0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c"
+// fromAddress := "n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8"
+// toAddress := "tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal"
+func TestGetBalance(t *testing.T) {
+	client := NewClient(types.BTC_Signet)
+	addr, err := client.GetAddress("n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8")
+	require.NoError(t, err)
+	fmt.Println(addr.Address)
+	fmt.Println("funded sat :", addr.ChainStats.FundedTxoSum)
+	fmt.Println("spent sat :", addr.ChainStats.SpentTxoSum)
+	fmt.Println("balance :", addr.ChainStats.FundedTxoSum-addr.ChainStats.SpentTxoSum)
+	fmt.Println("tx count :", addr.ChainStats.TxCount)
+
+}
