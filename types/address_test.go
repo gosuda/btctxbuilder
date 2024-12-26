@@ -62,7 +62,7 @@ func TestAddrType(t *testing.T) {
 }
 
 func TestGenerateAddress(t *testing.T) {
-	network := BTC_Testnet3
+	network := BTC_Signet
 	params := GetParams(network)
 
 	priv, err := secp256k1.GeneratePrivateKey()
@@ -71,11 +71,11 @@ func TestGenerateAddress(t *testing.T) {
 
 	pub := priv.PubKey()
 	pubKey := pub.SerializeCompressed()
-	addressP2PKH, err := PubKeyToAddr(pubKey, P2PKH, params)
+	addressP2PKH, err := PubKeyToAddr(pubKey, P2WPKH, params)
 	require.NoError(t, err)
 
 	fmt.Println("Private Key: ", hex.EncodeToString(privKey))
 	fmt.Println("Public Key: ", hex.EncodeToString(pubKey))
-	fmt.Println("P2PKH Address: ", addressP2PKH)
+	fmt.Println("P2WPKH Address: ", addressP2PKH)
 
 }

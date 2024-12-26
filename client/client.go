@@ -86,15 +86,24 @@ func RequestGet[T any](client *Client, endpoint string) (T, error) {
 func RequestPost[T any](client *Client, endpoint string, payload interface{}) (T, error) {
 	fullURL := fmt.Sprintf("%s%s", client.url, endpoint)
 
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return *new(T), fmt.Errorf("failed to marshal payload: %w", err)
+	var err error
+	var resp *http.Response
+	if payloadStr, ok := payload.(string); ok {
+		resp, err = client.http.Post(fullURL, "text/plain", bytes.NewBuffer([]byte(payloadStr)))
+		if err != nil {
+			return *new(T), fmt.Errorf("failed to make request: %w", err)
+		}
+	} else {
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return *new(T), fmt.Errorf("failed to marshal payload: %w", err)
+		}
+		resp, err = client.http.Post(fullURL, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return *new(T), fmt.Errorf("failed to make request: %w", err)
+		}
 	}
 
-	resp, err := client.http.Post(fullURL, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return *new(T), fmt.Errorf("failed to make request: %w", err)
-	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
