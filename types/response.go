@@ -1,7 +1,5 @@
 package types
 
-import "github.com/btcsuite/btcd/btcutil"
-
 type Block struct {
 	ID                string  `json:"id"`
 	Height            uint64  `json:"height"`
@@ -47,11 +45,6 @@ type Vout struct {
 	ScriptpubkeyType    string `json:"scriptpubkey_type"`
 	ScriptpubkeyAddress string `json:"scriptpubkey_address,omitempty"`
 	Value               int64  `json:"value"`
-
-	// calculated fields
-	Amount    btcutil.Amount `json:"-"`
-	Address   string         `json:"-"`
-	PublicKey string         `json:"-"`
 }
 
 type Utxo struct {

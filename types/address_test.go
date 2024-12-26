@@ -34,7 +34,7 @@ func TestPubKeyToAddr(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "2NF33rckfiQTiE5Guk5ufUdwms8PgmtnEdc", nestedP2wpkh)
 
-	p2tr, err := PubKeyToAddr(publicKey, TAPROOT, params)
+	p2tr, err := PubKeyToAddr(publicKey, P2TR, params)
 	require.NoError(t, err)
 	assert.Equal(t, "tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", p2tr)
 }
@@ -57,7 +57,7 @@ func TestAddrType(t *testing.T) {
 
 	_, p2tr, err := DecodeAddress("tb1pklh8lqax5l7m2ycypptv2emc4gata2dy28svnwcp9u32wlkenvsspcvhsr", params)
 	require.NoError(t, err)
-	require.Equal(t, TAPROOT, p2tr)
+	require.Equal(t, P2TR, p2tr)
 
 }
 

@@ -22,7 +22,7 @@ const (
 	P2WSH        AddrType = "p2wsh"        // native segwit
 	P2WSH_NESTED AddrType = "p2wsh-nested" // nested segwit
 
-	TAPROOT AddrType = "taproot" // taproot
+	P2TR AddrType = "taproot" // taproot
 
 	Invalid AddrType = ""
 )
@@ -61,7 +61,7 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, params *chaincfg.Params) 
 			return "", err
 		}
 		return addr.EncodeAddress(), nil
-	case TAPROOT:
+	case P2TR:
 		internalKey, err := btcec.ParsePubKey(publicKey)
 		if err != nil {
 			return "", err
@@ -118,7 +118,7 @@ func ScriptToAddr(script []byte, addrType AddrType, params *chaincfg.Params) (ad
 			return "", err
 		}
 		return addr.EncodeAddress(), nil
-	case TAPROOT:
+	case P2TR:
 		// OP_1 <32-byte-TweakHash>
 		if len(script) != 34 || script[0] != txscript.OP_1 {
 			return "", fmt.Errorf("invalid Taproot script")
@@ -156,7 +156,7 @@ func GetAddressType(addr btcutil.Address) (addrType AddrType) {
 	case *btcutil.AddressWitnessScriptHash:
 		return P2WSH
 	case *btcutil.AddressTaproot:
-		return TAPROOT
+		return P2TR
 	default:
 		return Invalid
 	}

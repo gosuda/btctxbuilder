@@ -55,7 +55,6 @@ func TestGetTx(t *testing.T) {
 
 	for _, vin := range tx.Vin {
 		if vin.Prevout != nil {
-			fmt.Println("prev vout address :", vin.Prevout.Address)
 			fmt.Println("prev vout value :", vin.Prevout.Value)
 			fmt.Println("prev vout scriptpubkey :", vin.Prevout.Scriptpubkey)
 			fmt.Println("prev vout scriptpubkey asm :", vin.Prevout.ScriptpubkeyAsm)

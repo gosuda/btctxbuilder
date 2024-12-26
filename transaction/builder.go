@@ -106,7 +106,7 @@ func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 		}
 
 		// Set the WitnessUtxo or NonWitnessUtxo based on the address type
-		if addrType == types.P2WPKH || addrType == types.P2WSH || addrType == types.TAPROOT {
+		if addrType == types.P2WPKH || addrType == types.P2WSH || addrType == types.P2TR {
 			// For SegWit and Taproot, use WitnessUtxo
 			packet.Inputs[i].WitnessUtxo = &wire.TxOut{
 				Value:    int64(vin.Amount),

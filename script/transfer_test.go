@@ -17,7 +17,7 @@ func TestEncodeTransferScript(t *testing.T) {
 		{types.P2PKH, types.BTC_Testnet3},
 		{types.P2WPKH, types.BTC_Testnet3},
 		{types.P2WPKH_NESTED, types.BTC_Testnet3},
-		{types.TAPROOT, types.BTC_Testnet3},
+		{types.P2TR, types.BTC_Testnet3},
 	} {
 		// make params and address
 		param := types.GetParams(test.network)

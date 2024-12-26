@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
 	"github.com/rabbitprincess/btctxbuilder/script"
+	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
 const (
@@ -41,7 +42,7 @@ func (t *TxBuilder) FundRawTransaction() error {
 		return err
 	}
 	feeRate := feeEstimate["6"]
-	feeAmount, err := EstimateTxFee(feeRate, t.msgTx.TxIn, t.msgTx.TxOut, changeAddressBTC)
+	feeAmount, err := EstimateTxFee(feeRate, t.inputs, t.msgTx.TxOut, changeAddressBTC)
 	if err != nil {
 		return err
 	}
@@ -67,8 +68,8 @@ func (t *TxBuilder) FundRawTransaction() error {
 	return nil
 }
 
-func EstimateTxFee(feeRate float64, ins []*wire.TxIn, outs []*wire.TxOut, changeAddress btcutil.Address) (btcutil.Amount, error) {
-	feeRatePerKb := btcutil.Amount(feeRate)
+func EstimateTxFee(feeRate float64, ins TxInputs, outs []*wire.TxOut, changeAddress btcutil.Address) (btcutil.Amount, error) {
+	feeRatePerKb := btcutil.Amount(feeRate) * 1000
 	vSize, err := EstimateTxVirtualSize(ins, outs, changeAddress)
 	if err != nil {
 		return 0, err
@@ -77,22 +78,19 @@ func EstimateTxFee(feeRate float64, ins []*wire.TxIn, outs []*wire.TxOut, change
 	return estimateFee, nil
 }
 
-func EstimateTxVirtualSize(ins []*wire.TxIn, outs []*wire.TxOut, changeAddress btcutil.Address) (vSize int, err error) {
+func EstimateTxVirtualSize(ins TxInputs, outs []*wire.TxOut, changeAddress btcutil.Address) (vSize int, err error) {
+	// TODO : Add support for p2sh, p2wsh
 	var nested, p2wpkh, p2tr, p2pkh int
 	for _, in := range ins {
-		// Check the script type for each input
-		if len(in.Witness) > 0 {
-			if len(in.Witness[0]) == 64 { // Assuming Schnorr signature size
-				p2tr++
-			} else {
-				p2wpkh++
-			}
-		} else if len(in.SignatureScript) > 0 {
-			if len(in.SignatureScript) == txsizes.RedeemNestedP2WPKHInputSize {
-				nested++
-			} else {
-				p2pkh++
-			}
+		switch types.GetAddressType(in.Address) {
+		case types.P2PKH:
+			p2pkh++
+		case types.P2WPKH:
+			p2wpkh++
+		case types.P2WPKH_NESTED, types.P2WSH_NESTED:
+			nested++
+		case types.P2TR:
+			p2tr++
 		}
 	}
 	changeScriptSize, err := GetChangeScriptSize(changeAddress)
