@@ -13,16 +13,16 @@ import (
 type AddrType string
 
 const (
-	P2PK          AddrType = "p2pk"          // non segwit
-	P2PKH         AddrType = "p2pkh"         // non segwit
-	P2WPKH        AddrType = "p2wpkh"        // native segwit
-	P2WPKH_NESTED AddrType = "p2wpkh-nested" // nested segwit
+	P2PK          AddrType = "p2pk"    // non segwit
+	P2PKH         AddrType = "p2pkh"   // non segwit
+	P2WPKH        AddrType = "p2wpkh"  // native segwit v0
+	P2WPKH_NESTED AddrType = "np2wpkh" // nested segwit v0
 
-	P2SH         AddrType = "p2sh"         // non segwit
-	P2WSH        AddrType = "p2wsh"        // native segwit
-	P2WSH_NESTED AddrType = "p2wsh-nested" // nested segwit
+	P2SH         AddrType = "p2sh"   // non segwit
+	P2WSH        AddrType = "p2wsh"  // native segwit v0
+	P2WSH_NESTED AddrType = "np2wsh" // nested segwit v0
 
-	P2TR AddrType = "taproot" // taproot
+	P2TR AddrType = "taproot" // segwit v1
 
 	Invalid AddrType = ""
 )
