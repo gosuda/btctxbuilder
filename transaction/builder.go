@@ -5,15 +5,15 @@ import (
 
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
 type BuilderOpt func(*TxBuilder) error
 
-func WithVersion(version int) BuilderOpt {
+func WithVersion(version int32) BuilderOpt {
 	return func(t *TxBuilder) error {
 		t.version = version
 		return nil
@@ -28,7 +28,7 @@ func WithFundAddress(address string) BuilderOpt {
 }
 
 type TxBuilder struct {
-	version int
+	version int32
 	client  *client.Client
 	params  *chaincfg.Params
 
@@ -68,7 +68,7 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		return nil, err
 	}
 
-	t.msgTx = wire.NewMsgTx(int32(t.version))
+	t.msgTx = wire.NewMsgTx(t.version)
 	for _, in := range txIns {
 		t.msgTx.AddTxIn(in)
 	}
@@ -98,30 +98,77 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 
 func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 	for i := range packet.Inputs {
-		vin := t.inputs[i]
+		txInput := t.inputs[i]
 
-		addrType := types.GetAddressType(vin.Address)
-		if addrType == types.Invalid {
-			return fmt.Errorf("invalid address type")
-		}
-
-		// Set the WitnessUtxo or NonWitnessUtxo based on the address type
-		if addrType == types.P2WPKH || addrType == types.P2WSH || addrType == types.P2TR {
-			// For SegWit and Taproot, use WitnessUtxo
-			packet.Inputs[i].WitnessUtxo = &wire.TxOut{
-				Value:    int64(vin.Amount),
-				PkScript: utils.MustDecode(vin.Prevout.Scriptpubkey),
-			}
-		} else {
-			packet.Inputs[i].NonWitnessUtxo = vin.tx
-		}
-		if vin.RedeemScript != nil {
-			packet.Inputs[i].RedeemScript = vin.RedeemScript
-		}
-		if vin.WitnessScript != nil {
-			packet.Inputs[i].WitnessScript = vin.WitnessScript
+		switch txInput.AddrType {
+		case types.P2PK, types.P2PKH:
+			addInputInfoNonSegWit(&packet.Inputs[i], txInput)
+		case types.P2WPKH, types.P2WPKH_NESTED:
+			addInputInfoSegWitV0(&packet.Inputs[i], txInput)
+		case types.P2TR:
+			addInputInfoSegWitV1(&packet.Inputs[i], txInput)
+		default:
+			return fmt.Errorf("not support address type %s", txInput.AddrType)
 		}
 
 	}
 	return nil
+}
+
+func addInputInfoNonSegWit(in *psbt.PInput, txInput *TxInput) {
+	in.NonWitnessUtxo = txInput.tx
+
+	// Include the derivation path for each input.
+	// in.Bip32Derivation = []*psbt.Bip32Derivation{
+	// 	derivationInfo,
+	// }
+}
+
+// addInputInfoSegWitV0 adds the UTXO and BIP32 derivation info for a SegWit v0
+// PSBT input (p2wkh, np2wkh) from the given wallet information.
+func addInputInfoSegWitV0(in *psbt.PInput, txInput *TxInput) {
+
+	// As a fix for CVE-2020-14199 we have to always include the full
+	// non-witness UTXO in the PSBT for segwit v0.
+	in.NonWitnessUtxo = txInput.tx
+
+	// To make it more obvious that this is actually a witness output being
+	// spent, we also add the same information as the witness UTXO.
+	in.WitnessUtxo = txInput.prevVout
+	in.SighashType = txscript.SigHashAll
+
+	// Include the derivation path for each input.
+	// in.Bip32Derivation = []*psbt.Bip32Derivation{
+	// 	derivationInfo,
+	// }
+
+	// For nested P2WKH we need to add the redeem script to the input,
+	// otherwise an offline wallet won't be able to sign for it. For normal
+	// P2WKH this will be nil.
+	if txInput.AddrType == types.P2WPKH_NESTED {
+		// TODO : test!!
+		in.RedeemScript = in.WitnessScript
+	}
+}
+
+// addInputInfoSegWitV0 adds the UTXO and BIP32 derivation info for a SegWit v1
+// PSBT input (p2tr) from the given wallet information.
+func addInputInfoSegWitV1(in *psbt.PInput, txInput *TxInput) {
+
+	// For SegWit v1 we only need the witness UTXO information.
+	in.WitnessUtxo = txInput.prevVout
+	in.SighashType = txscript.SigHashDefault
+
+	// Include the derivation path for each input in addition to the
+	// taproot specific info we have below.
+	// in.Bip32Derivation = []*psbt.Bip32Derivation{
+	// 	derivationInfo,
+	// }
+
+	// Include the derivation path for each input.
+	// in.TaprootBip32Derivation = []*psbt.TaprootBip32Derivation{{
+	// 	XOnlyPubKey:          derivationInfo.PubKey[1:],
+	// 	MasterKeyFingerprint: derivationInfo.MasterKeyFingerprint,
+	// 	Bip32Path:            derivationInfo.Bip32Path,
+	// }}
 }

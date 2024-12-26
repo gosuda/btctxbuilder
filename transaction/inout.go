@@ -1,8 +1,6 @@
 package transaction
 
 import (
-	"fmt"
-
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -13,26 +11,33 @@ import (
 )
 
 type TxInput struct {
-	tx *wire.MsgTx
-	*types.Vin
+	txid string
+	vout uint32
 
-	Amount        btcutil.Amount
-	Address       btcutil.Address
-	RedeemScript  []byte
-	WitnessScript []byte
+	tx       *wire.MsgTx
+	prevVout *wire.TxOut
+	// *types.Vin
+
+	Amount   btcutil.Amount
+	Address  btcutil.Address
+	AddrType types.AddrType
+
+	// PkScript      []byte
+	// RedeemScript  []byte
+	// WitnessScript []byte
 }
 
 type TxInputs []*TxInput
 
 func (t *TxInputs) AddInput(c *client.Client, txid string, vout uint32, amount int64, address string) error {
-	tx, err := c.GetTx(txid)
-	if err != nil {
-		return err
-	}
-	if vout >= uint32(len(tx.Vout)) {
-		return fmt.Errorf("vout %d out of range", vout)
-	}
-	prev := &tx.Vout[vout]
+	// tx, err := c.GetTx(txid)
+	// if err != nil {
+	// 	return err
+	// }
+	// if vout >= uint32(len(tx.Vout)) {
+	// 	return fmt.Errorf("vout %d out of range", vout)
+	// }
+	// prev := &tx.Vout[vout]
 
 	rawTx, err := c.GetRawTx(txid)
 	if err != nil {
@@ -42,24 +47,30 @@ func (t *TxInputs) AddInput(c *client.Client, txid string, vout uint32, amount i
 	if err != nil {
 		return err
 	}
+	prevVout := msgTx.TxOut[vout]
 
 	btcAmount := btcutil.Amount(amount)
 	btcAddress, _, err := types.DecodeAddress(address, c.GetParams())
 	if err != nil {
 		return err
 	}
+	AddrType := types.GetAddressType(btcAddress)
 
-	vin := &types.Vin{
-		Txid:    txid,
-		Vout:    vout,
-		Prevout: prev,
-	}
+	// vin := &types.Vin{
+	// 	Txid:    txid,
+	// 	Vout:    vout,
+	// 	Prevout: prev,
+	// }
 
 	*t = append(*t, &TxInput{
-		tx:      msgTx,
-		Vin:     vin,
-		Amount:  btcAmount,
-		Address: btcAddress,
+		txid:     txid,
+		vout:     vout,
+		tx:       msgTx,
+		prevVout: prevVout,
+		// Vin:      vin,
+		Amount:   btcAmount,
+		Address:  btcAddress,
+		AddrType: AddrType,
 	})
 	return nil
 }
@@ -75,12 +86,11 @@ func (t *TxInputs) AmountTotal() btcutil.Amount {
 func (t *TxInputs) ToWire() ([]*wire.TxIn, error) {
 	var txIns []*wire.TxIn = make([]*wire.TxIn, 0, len(*t))
 	for _, in := range *t {
-		txHash, err := chainhash.NewHashFromStr(in.Txid)
+		txHash, err := chainhash.NewHashFromStr(in.txid)
 		if err != nil {
 			return nil, err
 		}
-		outPoint := wire.NewOutPoint(txHash, in.Vout)
-
+		outPoint := wire.NewOutPoint(txHash, in.vout)
 		txIn := wire.NewTxIn(outPoint, nil, nil)
 		txIns = append(txIns, txIn)
 	}
