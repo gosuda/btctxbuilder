@@ -44,7 +44,6 @@ func (c *Client) GetUTXO(address string) ([]*types.Utxo, error) {
 		rawAddress := utils.MustDecode(address)
 		address = base58.Encode(rawAddress) //, c.params.PubKeyHashAddrID)
 	}
-	fmt.Println(address)
 
 	return RequestGet[[]*types.Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }
