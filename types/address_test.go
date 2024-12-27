@@ -11,7 +11,7 @@ import (
 )
 
 func TestPubKeyToAddr(t *testing.T) {
-	network := BTC_Testnet3
+	network := BTC_Signet
 	params := GetParams(network)
 	pubKeyHex := "0357bbb2d4a9cb8a2357633f201b9c518c2795ded682b7913c6beef3fe23bd6d2f"
 	publicKey, err := hex.DecodeString(pubKeyHex)
@@ -19,8 +19,8 @@ func TestPubKeyToAddr(t *testing.T) {
 
 	p2pk, err := PubKeyToAddr(publicKey, P2PK, params)
 	require.NoError(t, err)
-	// base58 encoded compressed public key
-	assert.Equal(t, "zbRapgvpp4xSYvt8oeuzBc9qfZh2UfAgQ6r218xhCQxe", p2pk)
+	// hex encoded compressed public key
+	assert.Equal(t, pubKeyHex, p2pk)
 
 	p2pkh, err := PubKeyToAddr(publicKey, P2PKH, params)
 	require.NoError(t, err)
@@ -62,6 +62,8 @@ func TestAddrType(t *testing.T) {
 }
 
 func TestGenerateAddress(t *testing.T) {
+	addrType := P2PK
+
 	network := BTC_Signet
 	params := GetParams(network)
 
@@ -71,11 +73,11 @@ func TestGenerateAddress(t *testing.T) {
 
 	pub := priv.PubKey()
 	pubKey := pub.SerializeCompressed()
-	addressP2PKH, err := PubKeyToAddr(pubKey, P2WPKH, params)
+	addr, err := PubKeyToAddr(pubKey, addrType, params)
 	require.NoError(t, err)
 
 	fmt.Println("Private Key: ", hex.EncodeToString(privKey))
 	fmt.Println("Public Key: ", hex.EncodeToString(pubKey))
-	fmt.Println("P2WPKH Address: ", addressP2PKH)
+	fmt.Println(addrType, "Address: ", addr)
 
 }

@@ -80,7 +80,7 @@ func RequestGet[T any](client *Client, endpoint string) (T, error) {
 	}
 
 	// Non-JSON response, only supported for strings
-	return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T", result)
+	return *new(T), fmt.Errorf("non-JSON response cannot be parsed into %T | res : %s", result, body)
 }
 
 func RequestPost[T any](client *Client, endpoint string, payload interface{}) (T, error) {

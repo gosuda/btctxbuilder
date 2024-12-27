@@ -3,7 +3,9 @@ package client
 import (
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
 func (c *Client) BestBlockHeight() (uint64, error) {
@@ -38,6 +40,12 @@ func (c *Client) GetAddress(address string) (*types.Address, error) {
 }
 
 func (c *Client) GetUTXO(address string) ([]*types.Utxo, error) {
+	if utils.IsHex(address) {
+		rawAddress := utils.MustDecode(address)
+		address = base58.Encode(rawAddress) //, c.params.PubKeyHashAddrID)
+	}
+	fmt.Println(address)
+
 	return RequestGet[[]*types.Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }
 

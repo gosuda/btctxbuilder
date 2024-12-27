@@ -5,9 +5,9 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
 type AddrType string
@@ -34,7 +34,7 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, params *chaincfg.Params) 
 		if err != nil {
 			return "", err
 		}
-		return base58.Encode(addr.ScriptAddress()), nil
+		return utils.Encode(addr.ScriptAddress()), nil
 	case P2PKH:
 		addr, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(publicKey), params)
 		if err != nil {

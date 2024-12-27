@@ -13,7 +13,6 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 		toTotal += amount
 	}
 
-	// get utxo
 	utxos, err := builder.client.GetUTXO(fromAddress)
 	if err != nil {
 		return nil, err

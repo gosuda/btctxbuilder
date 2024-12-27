@@ -28,8 +28,13 @@ import (
 // PrivKey, _ := hex.DecodeString(PrivKeyHex)
 // Address := "tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal"
 
-// DONE : p2pkh / p2wpkh
-// TODO : p2pk / np2wpkh / p2tr
+// p2pk
+// PrivKey := f7da598ef504fb1638484b05cc3dba7c943ebd03ccf6794707e7950724141011
+// Public Key := 024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466
+// Address := 024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466
+
+// DONE : p2pkh / p2wpkh / p2pk
+// TODO : np2wpkh / p2tr
 // p2sh, p2wsh np2wsh...??
 
 func TestTransfer(t *testing.T) {
@@ -41,6 +46,16 @@ func TestTransfer(t *testing.T) {
 		toAddress   string
 		toAmount    int64
 	}{
+		// p2pkh to p2pk
+		// {
+		// 	types.BTC_Signet,
+		// 	"a6018c89646f3c7596516544602283135e8d6e5b31421e335b91b86ae9c76409",
+		// 	"0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c",
+		// 	"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
+		// 	"024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466",
+		// 	1500,
+		// },
+
 		// p2pkh to p2wpkh
 		// {
 		// 	types.BTC_Signet,
@@ -60,7 +75,6 @@ func TestTransfer(t *testing.T) {
 		// 	"tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal",
 		// 	350,
 		// },
-
 	} {
 		c := client.NewClient(test.net)
 		psbtPacket, err := NewTransferTx(c, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
@@ -92,5 +106,4 @@ func TestTransfer(t *testing.T) {
 		jsonNewTx, _ := json.MarshalIndent(newTx, "", "\t")
 		fmt.Println(string(jsonNewTx))
 	}
-
 }
