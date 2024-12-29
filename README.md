@@ -1,6 +1,5 @@
 # btctxbuilder
-building bitcoin transaction toolkit
-
+A Bitcoin toolkit with your own keys, independent of Wallets.
 
 ## Supported Transaction Types
 
