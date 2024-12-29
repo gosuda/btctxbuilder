@@ -21,10 +21,6 @@ type TxInput struct {
 	Amount   btcutil.Amount
 	Address  btcutil.Address
 	AddrType types.AddrType
-
-	// PkScript      []byte
-	// RedeemScript  []byte
-	// WitnessScript []byte
 }
 
 type TxInputs []*TxInput

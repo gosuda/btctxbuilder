@@ -10,10 +10,19 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	var err error
 	builder := NewTxBuilder(c)
 
+	// estimate fee
+	fees, err := c.FeeEstimate()
+	if err != nil {
+		return nil, err
+	}
+	builder.feeRate = fees["1"]
+
 	var toTotal int64
 	for _, amount := range toAddress {
 		toTotal += amount
 	}
+	// add fee amount ( TODO - make virtual size calculation )
+	toTotal += int64(builder.feeRate * 500)
 
 	// if no utxos provided, get utxos from client
 	if len(utxos) == 0 {

@@ -74,7 +74,7 @@ func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*ps
 		if err != nil {
 			return nil, err
 		}
-		err = psbt.Finalize(packet, i)
+		_, err = psbt.MaybeFinalize(packet, i)
 		if err != nil {
 			return nil, err
 		}
@@ -100,11 +100,16 @@ func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *b
 		return err
 	}
 
-	if signOutcome, err := updater.Sign(i, signature, privKey.PubKey().SerializeCompressed(), nil, nil); err != nil {
+	// scriptSig 생성
+	scriptSig, err := txscript.NewScriptBuilder().
+		AddData(signature).
+		Script()
+	if err != nil {
 		return err
-	} else if signOutcome != psbt.SignSuccesful {
-		return fmt.Errorf("signing failed, code: %d", signOutcome)
 	}
+
+	// scriptSig를 PSBT 입력에 설정
+	updater.Upsbt.Inputs[i].FinalScriptSig = scriptSig
 	return nil
 }
 

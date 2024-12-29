@@ -36,13 +36,7 @@ func (t *TxBuilder) FundRawTransaction() error {
 		return err
 	}
 
-	// calculate fee
-	feeEstimate, err := t.client.FeeEstimate()
-	if err != nil {
-		return err
-	}
-	feeRate := feeEstimate["6"]
-	feeAmount, err := EstimateTxFee(feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
+	feeAmount, err := EstimateTxFee(t.feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
 	if err != nil {
 		return err
 	}
@@ -105,6 +99,8 @@ func EstimateTxVirtualSize(ins TxInputs, outs []*wire.TxOut, fundAddress btcutil
 func GetFundScriptSize(fundAddress btcutil.Address) (int, error) {
 	// Determine the script type and size
 	switch fundAddress.(type) {
+	case *btcutil.AddressPubKey: // P2PK
+		return 35, nil // [33-byte PubKey] OP_CHECKSIG
 	case *btcutil.AddressPubKeyHash: // P2PKH
 		return 25, nil // OP_DUP OP_HASH160 [20-byte HASH] OP_EQUALVERIFY OP_CHECKSIG
 	case *btcutil.AddressScriptHash: // P2SH

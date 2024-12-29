@@ -36,6 +36,7 @@ type TxBuilder struct {
 	outputs TxOutputs
 
 	fundAddress string
+	feeRate     float64
 
 	msgTx  *wire.MsgTx
 	packet *psbt.Packet

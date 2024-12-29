@@ -38,7 +38,7 @@ import (
 // PrivKey, _ := hex.DecodeString(PrivKeyHex)
 // Address := "tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal"
 
-// DONE : p2pk / p2pkh / p2wpkh / p2tr ( need custom utxo input for p2pk )
+// DONE : p2pk / p2pkh / p2wpkh / p2tr ( need utxo input for p2pk )
 // TODO : np2wpkh, p2sh, p2wsh, np2wsh...??
 
 func TestTransfer(t *testing.T) {
@@ -49,7 +49,35 @@ func TestTransfer(t *testing.T) {
 		fromAddress string
 		toAddress   string
 		toAmount    int64
+		utxos       []*types.Utxo
 	}{
+		// p2pk to p2pkh
+		{
+			types.BTC_Signet,
+			"f7da598ef504fb1638484b05cc3dba7c943ebd03ccf6794707e7950724141011",
+			"024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466",
+			"024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466",
+			"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
+			600,
+			[]*types.Utxo{
+				{
+					Txid:  "db2e0bfefcacdfe9cb4c0ed7044d6c4e97ac1fc59b88d6235abce8a58f1fcd51",
+					Vout:  0,
+					Value: 1500,
+				},
+				{
+					Txid:  "1d1f3502944f4c279287a22c16a02f89dfa39746d96a58cb54043383c2099ba4",
+					Vout:  0,
+					Value: 1500,
+				},
+				{
+					Txid:  "e042f9141c71f6254b39e48664f2fea302b8e0f65fb1981a6d773d3ac3d05bed",
+					Vout:  46,
+					Value: 2000,
+				},
+			},
+		},
+
 		// p2pkh to p2pk
 		// {
 		// 	types.BTC_Signet,
@@ -57,7 +85,7 @@ func TestTransfer(t *testing.T) {
 		// 	"0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c",
 		// 	"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
 		// 	"024bbe77b1699f7acaa5d2602ed2e9cab9f3c8a547da357c3f670ce2c22727d466",
-		// 	1500,
+		// 	1500, nil,
 		// },
 
 		// p2pkh to p2wpkh
@@ -67,7 +95,7 @@ func TestTransfer(t *testing.T) {
 		// 	"0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c",
 		// 	"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
 		// 	"tb1q307vt2zz3f66hhs90p0le2pp6r53tvyqnzsy42",
-		// 	1500,
+		// 	1500, nil,
 		// },
 
 		// p2wpkh to np2wpkh
@@ -77,7 +105,7 @@ func TestTransfer(t *testing.T) {
 		// 	"023c53ee7749c3466415bd8f8b644227b4eb4eaf2339abbb0f1e44e035ea06b21f",
 		// 	"tb1q307vt2zz3f66hhs90p0le2pp6r53tvyqnzsy42",
 		// 	"2N234Z7UX4kGSTVRmusC5J5GrjdY4JNwhfy",
-		// 	500,
+		// 	500, nil,
 		// },
 
 		// np2wpkh to p2tr - TODO. need redeem script generation
@@ -87,21 +115,21 @@ func TestTransfer(t *testing.T) {
 		// 	"02e4362efc65525318bc25e1c35162a2761cc8daea92758e373bf7664007c6ab22",
 		// 	"2N234Z7UX4kGSTVRmusC5J5GrjdY4JNwhfy",
 		// 	"tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal",
-		// 	1500,
+		// 	1500, nil,
 		// },
 
 		// p2tr to p2pkh
-		{
-			types.BTC_Signet,
-			"49b8dbd365939908d920ab74aec8ec9cb3b7d49d252e1aec3ef59bed0f801acc",
-			"0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c",
-			"tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal",
-			"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
-			1500,
-		},
+		// {
+		// 	types.BTC_Signet,
+		// 	"49b8dbd365939908d920ab74aec8ec9cb3b7d49d252e1aec3ef59bed0f801acc",
+		// 	"0248d7c76f23e387bb151e6094590eb8f7777a8efbea9d0a5ddd1ea1833fa3925c",
+		// 	"tb1plt7057su6z39qjqtnvnnw7d6htdwulqm93mtpddj5wcetwxcv2nsm6geal",
+		// 	"n368zCWREFiRRX7icJRBb6n8nMsjJjNVK8",
+		// 	1500, nil,
+		// },
 	} {
 		c := client.NewClient(test.net)
-		psbtPacket, err := NewTransferTx(c, nil, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
+		psbtPacket, err := NewTransferTx(c, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
 		require.NoError(t, err)
 
 		fromPrivKey := utils.MustDecode(test.fromPrivKey)

@@ -13,10 +13,10 @@ import (
 
 const (
 	// https://github.com/blockstream/esplora/blob/master/API.md
-	// ClientURL = "https://blockstream.info"
+	ClientURL = "https://blockstream.info"
 
-	// https://mempool.space/docs/api/rest
-	ClientURL = "https://mempool.space"
+	//
+	// ClientURL = "https://mempool.space"
 )
 
 func NewClient(net types.Network) *Client {
