@@ -62,7 +62,7 @@ func TestAddrType(t *testing.T) {
 }
 
 func TestGenerateAddress(t *testing.T) {
-	addrType := P2PK
+	addrType := P2WPKH_NESTED
 
 	network := BTC_Signet
 	params := GetParams(network)
