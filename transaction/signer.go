@@ -79,11 +79,6 @@ func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*ps
 		}
 	}
 
-	// validate and finalize
-	err = psbt.MaybeFinalizeAll(packet)
-	if err != nil {
-		return nil, err
-	}
 	return packet, nil
 }
 
