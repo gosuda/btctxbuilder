@@ -36,15 +36,14 @@ func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*ps
 		var pkScript []byte
 		if input.WitnessUtxo != nil {
 			updater.AddInWitnessUtxo(input.WitnessUtxo, i)
-			// prevOutValue = input.WitnessUtxo.Value
+			prevOutValue = input.WitnessUtxo.Value
 			pkScript = input.WitnessUtxo.PkScript
 		} else if input.NonWitnessUtxo != nil {
 			index := packet.UnsignedTx.TxIn[i].PreviousOutPoint.Index
 			prevOut := input.NonWitnessUtxo.TxOut[index]
-			// prevOutValue = prevOut.Value
+			prevOutValue = prevOut.Value
 			pkScript = prevOut.PkScript
 		}
-		_ = prevOutValue
 
 		scriptClass, _, _, err := txscript.ExtractPkScriptAddrs(pkScript, chain)
 		if err != nil {
@@ -53,15 +52,15 @@ func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*ps
 
 		switch scriptClass {
 		case txscript.WitnessV1TaprootTy: // P2TR
-			err = signInputTaproot(updater, priv, i, pkScript, prevOutputFetcher)
+			err = signInputP2TR(updater, priv, i, pkScript, prevOutputFetcher)
 		case txscript.PubKeyTy: // P2PK
 			err = signInputP2PK(updater, i, pkScript, priv)
 		case txscript.PubKeyHashTy: // P2PKH
 			err = signInputP2PKH(updater, i, pkScript, priv)
 		case txscript.ScriptHashTy: // P2SH
-			panic("not supported yet")
+			err = signInputP2SH(updater, input.RedeemScript, i, pkScript, priv)
 		case txscript.WitnessV0PubKeyHashTy: // P2WPKH
-			err = signInputP2WPKH(updater, i, pkScript, input.WitnessUtxo.Value, priv, prevOutputFetcher)
+			err = signInputP2WPKH(updater, i, pkScript, prevOutValue, priv, prevOutputFetcher)
 		case txscript.WitnessV0ScriptHashTy: // P2WSH
 			panic("not supported yet")
 		case txscript.MultiSigTy: // Multisig
@@ -100,9 +99,7 @@ func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *b
 		return err
 	}
 
-	scriptSig, err := txscript.NewScriptBuilder().
-		AddData(signature).
-		Script()
+	scriptSig, err := txscript.NewScriptBuilder().AddData(signature).Script()
 	if err != nil {
 		return err
 	}
@@ -132,6 +129,26 @@ func signInputP2PKH(updater *psbt.Updater, i int, prevPkScript []byte, privKey *
 	return nil
 }
 
+func signInputP2SH(updater *psbt.Updater, redeemScript []byte, i int, prevPkScript []byte, privKey *btcec.PrivateKey) error {
+	hashType := txscript.SigHashAll
+	if err := updater.AddInSighashType(hashType, i); err != nil {
+		return err
+	}
+
+	// valid RedeemScript
+	if !ValidRedeemSignature(redeemScript, prevPkScript) {
+		return fmt.Errorf("invalid redeem script")
+	}
+
+	signOutcome, err := updater.Sign(i, nil, privKey.PubKey().SerializeCompressed(), redeemScript, nil)
+	if err != nil {
+		return fmt.Errorf("failed to sign PSBT input: %v", err)
+	} else if signOutcome != psbt.SignSuccesful {
+		return fmt.Errorf("signing was not successful, outcome: %v", signOutcome)
+	}
+	return nil
+}
+
 func signInputP2WPKH(updater *psbt.Updater, i int, prevPkScript []byte, amount int64, privKey *btcec.PrivateKey, prevOutFetcher *txscript.MultiPrevOutFetcher) error {
 	// TODO : hashtype always all in p2wpkh
 	hashType := txscript.SigHashAll
@@ -151,15 +168,7 @@ func signInputP2WPKH(updater *psbt.Updater, i int, prevPkScript []byte, amount i
 	return nil
 }
 
-func signInputP2SH(updater *psbt.Updater, redeemScript []byte, i int, prevPkScript []byte, privKey *btcec.PrivateKey, hashType txscript.SigHashType, prevOutFetcher *txscript.MultiPrevOutFetcher) error {
-	if err := updater.AddInRedeemScript(redeemScript, i); err != nil {
-		return err
-	}
-	return nil
-	// return signInputP2PKH(updater, i, in, redeemScript, privKey, hashType)
-}
-
-func signInputTaproot(updater *psbt.Updater, privKey *secp256k1.PrivateKey, i int, prevPkScript []byte, prevOutFetcher txscript.PrevOutputFetcher) error {
+func signInputP2TR(updater *psbt.Updater, privKey *secp256k1.PrivateKey, i int, prevPkScript []byte, prevOutFetcher txscript.PrevOutputFetcher) error {
 	var err error
 
 	// key path only

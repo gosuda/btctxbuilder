@@ -73,7 +73,6 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, params *chaincfg.Params) 
 		return addr.EncodeAddress(), nil
 	default:
 		return "", fmt.Errorf("address type not supported | %s", addrType)
-
 	}
 }
 

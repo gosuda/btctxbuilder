@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/rabbitprincess/btctxbuilder/types"
@@ -81,14 +82,11 @@ func PsbtPrevOutputFetcher(packet *psbt.Packet) *txscript.MultiPrevOutFetcher {
 			)
 		}
 	}
-
 	return fetcher
 }
 
-func ValidateInputSignatures(packet *psbt.Packet) error {
-	err := psbt.InputsReadyToSign(packet)
-	if err != nil {
-		return err
-	}
-	return nil
+func ValidRedeemSignature(redeemScript []byte, pkScript []byte) bool {
+	redeemScriptHash := btcutil.Hash160(redeemScript)
+	actualScriptHash := pkScript[2 : len(pkScript)-1]
+	return bytes.Equal(redeemScriptHash, actualScriptHash)
 }
