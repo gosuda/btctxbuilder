@@ -3,9 +3,11 @@ package transaction
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/rabbitprincess/btctxbuilder/client"
+	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
+func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
+	var err error
 	builder := NewTxBuilder(c)
 
 	var toTotal int64
@@ -13,9 +15,12 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 		toTotal += amount
 	}
 
-	utxos, err := builder.client.GetUTXO(fromAddress)
-	if err != nil {
-		return nil, err
+	// if no utxos provided, get utxos from client
+	if len(utxos) == 0 {
+		utxos, err = builder.client.GetUTXO(fromAddress)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// select utxo
@@ -47,4 +52,8 @@ func NewTransferTx(c *client.Client, fromAddress string, toAddress map[string]in
 
 	// build psbt from inputs and outputs
 	return builder.Build()
+}
+
+func NewRunestoneEdictTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) {
+
 }

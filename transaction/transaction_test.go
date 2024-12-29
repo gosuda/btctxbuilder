@@ -101,7 +101,7 @@ func TestTransfer(t *testing.T) {
 		},
 	} {
 		c := client.NewClient(test.net)
-		psbtPacket, err := NewTransferTx(c, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
+		psbtPacket, err := NewTransferTx(c, nil, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
 		require.NoError(t, err)
 
 		fromPrivKey := utils.MustDecode(test.fromPrivKey)
