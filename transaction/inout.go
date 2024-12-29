@@ -99,8 +99,8 @@ func (t *TxInputs) ToWire() ([]*wire.TxIn, error) {
 }
 
 type TxOutput struct {
-	Address btcutil.Address
-	Amount  btcutil.Amount
+	Amount   btcutil.Amount
+	PkScript []byte
 }
 
 type TxOutputs []*TxOutput
@@ -110,12 +110,20 @@ func (t *TxOutputs) AddOutputTransfer(params *chaincfg.Params, addr string, amou
 	if err != nil {
 		return err
 	}
+	pkScript, err := script.EncodeTransferScript(rawAddr)
+	if err != nil {
+		return err
+	}
+	t.AddOutputPkScript(pkScript, amount)
+	return nil
+}
+
+func (t *TxOutputs) AddOutputPkScript(pkScript []byte, amount int64) {
 	vout := &TxOutput{
-		Address: rawAddr,
-		Amount:  btcutil.Amount(amount),
+		Amount:   btcutil.Amount(amount),
+		PkScript: pkScript,
 	}
 	*t = append(*t, vout)
-	return nil
 }
 
 func (t *TxOutputs) AmountTotal() btcutil.Amount {
@@ -129,11 +137,7 @@ func (t *TxOutputs) AmountTotal() btcutil.Amount {
 func (t *TxOutputs) ToWire() ([]*wire.TxOut, error) {
 	txOuts := make([]*wire.TxOut, 0, len(*t))
 	for _, out := range *t {
-		pkScript, err := script.EncodeTransferScript(out.Address)
-		if err != nil {
-			return nil, err
-		}
-		txOuts = append(txOuts, wire.NewTxOut(int64(out.Amount), pkScript))
+		txOuts = append(txOuts, wire.NewTxOut(int64(out.Amount), out.PkScript))
 	}
 	return txOuts, nil
 }
