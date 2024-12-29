@@ -100,7 +100,6 @@ func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *b
 		return err
 	}
 
-	// scriptSig 생성
 	scriptSig, err := txscript.NewScriptBuilder().
 		AddData(signature).
 		Script()
@@ -108,17 +107,16 @@ func signInputP2PK(updater *psbt.Updater, i int, prevPkScript []byte, privKey *b
 		return err
 	}
 
-	// scriptSig를 PSBT 입력에 설정
 	updater.Upsbt.Inputs[i].FinalScriptSig = scriptSig
 	return nil
 }
 
 func signInputP2PKH(updater *psbt.Updater, i int, prevPkScript []byte, privKey *btcec.PrivateKey) error {
 	// TODO : hashtype always all in p2pkh
-	// hashType := txscript.SigHashAll
-	// if err := updater.AddInSighashType(hashType, i); err != nil {
-	// 	return err
-	// }
+	hashType := txscript.SigHashAll
+	if err := updater.AddInSighashType(hashType, i); err != nil {
+		return err
+	}
 
 	signature, err := txscript.RawTxInSignature(updater.Upsbt.UnsignedTx, i, prevPkScript, txscript.SigHashAll, privKey)
 	if err != nil {
