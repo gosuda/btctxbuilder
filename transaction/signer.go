@@ -7,7 +7,6 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -155,11 +154,6 @@ func signInputP2SH(updater *psbt.Updater, redeemScript []byte, i int, prevPkScri
 	}
 	return nil
 	// return signInputP2PKH(updater, i, in, redeemScript, privKey, hashType)
-}
-
-func signInputMultisig(updater *psbt.Updater, i int, addresses []btcutil.Address, nRequired int, prevPkScript []byte, sigScript, prevScript []byte) error {
-
-	return nil
 }
 
 func signInputTaproot(updater *psbt.Updater, privKey *secp256k1.PrivateKey, i int, prevPkScript []byte, prevOutFetcher txscript.PrevOutputFetcher) error {
