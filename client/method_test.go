@@ -39,6 +39,17 @@ func TestGetBestBlock(t *testing.T) {
 	}
 }
 
+func TestGetBlock(t *testing.T) {
+	client := NewClient(types.BTC)
+	blockHash, err := client.GetBlockHashByHeight(800000)
+	require.NoError(t, err)
+	require.Equal(t, "00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054", blockHash)
+
+	block, err := client.GetBlock(blockHash)
+	require.NoError(t, err)
+	fmt.Println("block:", block)
+}
+
 // transaction example
 // p2pkh : ef796f3cef041768d37a34a469d72e5c91de568f963eae6daf3480fe8405e2ed
 // v0_p2wpkh : 6c9f507a64cfec9ef96de41680af40c84607d71b62eac7f7f2a406a597c8c582

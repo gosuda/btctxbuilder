@@ -16,6 +16,10 @@ func (c *Client) BestBlockHash() (string, error) {
 	return RequestGet[string](c, "/blocks/tip/hash")
 }
 
+func (c *Client) GetBlockHashByHeight(height uint64) (string, error) {
+	return RequestGet[string](c, fmt.Sprintf("/block-height/%d", height))
+}
+
 func (c *Client) GetBlock(hash string) (*types.Block, error) {
 	return RequestGet[*types.Block](c, fmt.Sprintf("/block/%s", hash))
 }
