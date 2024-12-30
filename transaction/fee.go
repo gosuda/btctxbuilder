@@ -46,7 +46,25 @@ func (t *TxBuilder) FundRawTransaction() error {
 	totalOutput := t.outputs.AmountTotal()
 	fund := totalInput - totalOutput - feeAmount
 	if fund < 0 {
-		return fmt.Errorf("insufficient funds, input: %d, output: %d, fee: %d", totalInput, totalOutput, feeAmount)
+		// fund more utxo
+		selected, _, err := SelectUtxo(t.utxos, int64(feeAmount))
+		if err != nil {
+			return err
+		} else if len(selected) == 0 {
+			return fmt.Errorf("insufficient balance | total : %v | to amount : %v", totalInput, totalOutput)
+		}
+		for _, utxo := range selected {
+			if err = t.inputs.AddInput(t.client, utxo.Txid, utxo.Vout, utxo.Value, t.fromAddress); err != nil {
+				return err
+			}
+		}
+
+		// recalculate fund amount
+		feeAmount, err = EstimateTxFee(t.feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
+		if err != nil {
+			return err
+		}
+		fund = totalInput - totalOutput - feeAmount
 	}
 
 	// add fund output

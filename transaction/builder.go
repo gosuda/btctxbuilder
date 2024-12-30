@@ -32,6 +32,9 @@ type TxBuilder struct {
 	client  *client.Client
 	params  *chaincfg.Params
 
+	fromAddress string
+	utxos       []*types.Utxo
+
 	inputs  TxInputs
 	outputs TxOutputs
 

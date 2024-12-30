@@ -9,6 +9,14 @@ import (
 func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
 	var err error
 	builder := NewTxBuilder(c)
+	builder.fromAddress = fromAddress
+
+	// fund fee outputs
+	if fundAddress == "" {
+		builder.fundAddress = fromAddress
+	} else {
+		builder.fundAddress = fundAddress
+	}
 
 	// estimate fee
 	fees, err := c.FeeEstimate()
@@ -17,15 +25,16 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	}
 	builder.feeRate = fees["1"]
 
-	var toTotal int64
-	for _, amount := range toAddress {
-		toTotal += amount
+	// create outputs
+	for address, amount := range toAddress {
+		if err = builder.outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
+			return nil, err
+		}
 	}
-	// add fee amount ( TODO - make virtual size calculation )
-	toTotal += int64(builder.feeRate * 500)
+	toTotal := builder.outputs.AmountTotal()
 
-	// if no utxos provided, get utxos from client
-	if len(utxos) == 0 {
+	// get utxo
+	if len(utxos) == 0 { // if no utxos provided, get utxos from client
 		utxos, err = builder.client.GetUTXO(fromAddress)
 		if err != nil {
 			return nil, err
@@ -33,31 +42,18 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	}
 
 	// select utxo
-	selected, _, err := SelectUtxo(utxos, toTotal)
+	selected, unselected, err := SelectUtxo(utxos, int64(toTotal))
 	if err != nil {
 		return nil, err
 	}
-
-	// create inputs
+	// add inputs
 	for _, utxo := range selected {
 		if err = builder.inputs.AddInput(c, utxo.Txid, utxo.Vout, utxo.Value, fromAddress); err != nil {
 			return nil, err
 		}
 	}
-
-	// create outputs
-	for address, amount := range toAddress {
-		if err = builder.outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
-			return nil, err
-		}
-	}
-
-	// fund fee outputs
-	if fundAddress == "" {
-		builder.fundAddress = fromAddress
-	} else {
-		builder.fundAddress = fundAddress
-	}
+	// unspent utxos
+	builder.utxos = unselected
 
 	// build psbt from inputs and outputs
 	return builder.Build()

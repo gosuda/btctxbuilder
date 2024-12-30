@@ -12,26 +12,24 @@ import (
 	"github.com/rabbitprincess/btctxbuilder/utils"
 )
 
-func SelectUtxo(utxos []*types.Utxo, amount int64) (selected []*types.Utxo, totalAmount int64, err error) {
+func SelectUtxo(utxos []*types.Utxo, amount int64) (selected []*types.Utxo, unselected []*types.Utxo, err error) {
 	sort.Slice(utxos, func(i, j int) bool {
 		return utxos[i].Value < utxos[j].Value
 	})
-
+	var idx int
 	var total int64
-	var selectedUtxos []*types.Utxo
-	for _, utxo := range utxos {
-		total += utxo.Value
-		selectedUtxos = append(selectedUtxos, utxo)
+	for idx = range utxos {
+		total += utxos[idx].Value
 		if total >= amount {
 			break
 		}
 	}
-
 	if total < amount {
-		return nil, 0, fmt.Errorf("insufficient balance | total : %v | to amount : %v", total, amount)
+		return nil, nil, fmt.Errorf("insufficient balance | total : %v | to amount : %v", total, amount)
 	}
-
-	return selectedUtxos, total, nil
+	selected = utxos[:idx+1]
+	unselected = utxos[idx+1:]
+	return selected, unselected, nil
 }
 
 func DecodePSBT(psbtStr string) (*psbt.Packet, error) {
