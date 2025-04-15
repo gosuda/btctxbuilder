@@ -9,13 +9,13 @@ import (
 func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
 	var err error
 	builder := NewTxBuilder(c)
-	builder.fromAddress = fromAddress
+	builder.FromAddress = fromAddress
 
 	// fund fee outputs
 	if fundAddress == "" {
-		builder.fundAddress = fromAddress
+		builder.FundAddress = fromAddress
 	} else {
-		builder.fundAddress = fundAddress
+		builder.FundAddress = fundAddress
 	}
 
 	// estimate fee
@@ -23,19 +23,19 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	if err != nil {
 		return nil, err
 	}
-	builder.feeRate = fees["1"]
+	builder.FeeRate = fees["1"]
 
 	// create outputs
 	for address, amount := range toAddress {
-		if err = builder.outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
+		if err = builder.Outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
 			return nil, err
 		}
 	}
-	toTotal := builder.outputs.AmountTotal()
+	toTotal := builder.Outputs.AmountTotal()
 
 	// get utxo
 	if len(utxos) == 0 { // if no utxos provided, get utxos from client
-		utxos, err = builder.client.GetUTXO(fromAddress)
+		utxos, err = builder.Client.GetUTXO(fromAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -48,12 +48,12 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	}
 	// add inputs
 	for _, utxo := range selected {
-		if err = builder.inputs.AddInput(c, utxo.Txid, utxo.Vout, utxo.Value, fromAddress); err != nil {
+		if err = builder.Inputs.AddInput(c, utxo.Txid, utxo.Vout, utxo.Value, fromAddress); err != nil {
 			return nil, err
 		}
 	}
 	// unspent utxos
-	builder.utxos = unselected
+	builder.Utxos = unselected
 
 	// build psbt from inputs and outputs
 	return builder.Build()

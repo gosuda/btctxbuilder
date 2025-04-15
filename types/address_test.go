@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,6 +60,26 @@ func TestAddrType(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, P2TR, p2tr)
 
+}
+
+func TestP2TRAddrToPubKey(t *testing.T) {
+	addrType := P2TR
+
+	network := BTC
+	params := GetParams(network)
+	priv, err := secp256k1.GeneratePrivateKey()
+	require.NoError(t, err)
+
+	pub := priv.PubKey()
+	taprootPub := txscript.ComputeTaprootKeyNoScript(pub)
+
+	addrP2tr, err := PubKeyToAddr(pub.SerializeCompressed(), addrType, params)
+	require.NoError(t, err)
+
+	pubKey, err := AddrP2TRToPubkey(addrP2tr, params)
+	require.NoError(t, err)
+
+	require.Equal(t, taprootPub.SerializeCompressed()[1:], pubKey)
 }
 
 func TestGenerateAddress(t *testing.T) {

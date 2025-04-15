@@ -17,12 +17,12 @@ const (
 
 func (t *TxBuilder) SufficentFunds() bool {
 	inSum, _ := btcutil.NewAmount(0)
-	for _, input := range t.inputs {
+	for _, input := range t.Inputs {
 		inSum += input.Amount
 	}
 
 	outSum, _ := btcutil.NewAmount(0)
-	for _, output := range t.outputs {
+	for _, output := range t.Outputs {
 		outSum += output.Amount
 	}
 
@@ -31,36 +31,36 @@ func (t *TxBuilder) SufficentFunds() bool {
 }
 
 func (t *TxBuilder) FundRawTransaction() error {
-	fundAddressBTC, err := btcutil.DecodeAddress(t.fundAddress, t.params)
+	fundAddressBTC, err := btcutil.DecodeAddress(t.FundAddress, t.Params)
 	if err != nil {
 		return err
 	}
 
-	feeAmount, err := EstimateTxFee(t.feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
+	feeAmount, err := EstimateTxFee(t.FeeRate, t.Inputs, t.MsgTx.TxOut, fundAddressBTC)
 	if err != nil {
 		return err
 	}
 
 	// calculate fund amount
-	totalInput := t.inputs.AmountTotal()
-	totalOutput := t.outputs.AmountTotal()
+	totalInput := t.Inputs.AmountTotal()
+	totalOutput := t.Outputs.AmountTotal()
 	fund := totalInput - totalOutput - feeAmount
 	if fund < 0 {
 		// fund more utxo
-		selected, _, err := SelectUtxo(t.utxos, int64(feeAmount))
+		selected, _, err := SelectUtxo(t.Utxos, int64(feeAmount))
 		if err != nil {
 			return err
 		} else if len(selected) == 0 {
 			return fmt.Errorf("insufficient balance | total : %v | to amount : %v", totalInput, totalOutput)
 		}
 		for _, utxo := range selected {
-			if err = t.inputs.AddInput(t.client, utxo.Txid, utxo.Vout, utxo.Value, t.fromAddress); err != nil {
+			if err = t.Inputs.AddInput(t.Client, utxo.Txid, utxo.Vout, utxo.Value, t.FromAddress); err != nil {
 				return err
 			}
 		}
 
 		// recalculate fund amount
-		feeAmount, err = EstimateTxFee(t.feeRate, t.inputs, t.msgTx.TxOut, fundAddressBTC)
+		feeAmount, err = EstimateTxFee(t.FeeRate, t.Inputs, t.MsgTx.TxOut, fundAddressBTC)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (t *TxBuilder) FundRawTransaction() error {
 			return err
 		}
 		fundTxOut := wire.NewTxOut(int64(fund), pkScript)
-		t.msgTx.TxOut = append(t.msgTx.TxOut, fundTxOut)
+		t.MsgTx.TxOut = append(t.MsgTx.TxOut, fundTxOut)
 	}
 
 	return nil

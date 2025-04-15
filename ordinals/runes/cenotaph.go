@@ -1,4 +1,4 @@
-package ordinals
+package runes
 
 import "errors"
 

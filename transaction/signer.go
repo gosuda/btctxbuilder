@@ -52,7 +52,7 @@ func SignTx(chain *chaincfg.Params, packet *psbt.Packet, privateKey []byte) (*ps
 
 		switch scriptClass {
 		case txscript.WitnessV1TaprootTy: // P2TR
-			err = signInputP2TR(updater, priv, i, pkScript, prevOutputFetcher)
+			err = signInputP2TR(updater, i, pkScript, priv, prevOutputFetcher)
 		case txscript.PubKeyTy: // P2PK
 			err = signInputP2PK(updater, i, pkScript, priv)
 		case txscript.PubKeyHashTy: // P2PKH
@@ -163,7 +163,7 @@ func signInputP2WPKH(updater *psbt.Updater, i int, prevPkScript []byte, amount i
 	return nil
 }
 
-func signInputP2TR(updater *psbt.Updater, privKey *secp256k1.PrivateKey, i int, prevPkScript []byte, prevOutFetcher txscript.PrevOutputFetcher) error {
+func signInputP2TR(updater *psbt.Updater, i int, prevPkScript []byte, privKey *secp256k1.PrivateKey, prevOutFetcher txscript.PrevOutputFetcher) error {
 	var err error
 
 	// key path only

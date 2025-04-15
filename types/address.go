@@ -160,3 +160,15 @@ func GetAddressType(addr btcutil.Address) (addrType AddrType) {
 		return Invalid
 	}
 }
+
+func AddrP2TRToPubkey(address string, params *chaincfg.Params) ([]byte, error) {
+	addr, addrType, err := DecodeAddress(address, params)
+	if err != nil {
+		return nil, err
+	} else if addrType != P2TR {
+		return nil, fmt.Errorf("address is not a Taproot address")
+	}
+
+	script := addr.(*btcutil.AddressTaproot).ScriptAddress()
+	return script, nil
+}

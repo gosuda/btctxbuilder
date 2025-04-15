@@ -22,34 +22,34 @@ func WithVersion(version int32) BuilderOpt {
 
 func WithFundAddress(address string) BuilderOpt {
 	return func(t *TxBuilder) error {
-		t.fundAddress = address
+		t.FundAddress = address
 		return nil
 	}
 }
 
 type TxBuilder struct {
 	version int32
-	client  *client.Client
-	params  *chaincfg.Params
+	Client  *client.Client
+	Params  *chaincfg.Params
 
-	fromAddress string
-	utxos       []*types.Utxo
+	FromAddress string
+	Utxos       []*types.Utxo
 
-	inputs  TxInputs
-	outputs TxOutputs
+	Inputs  TxInputs
+	Outputs TxOutputs
 
-	fundAddress string
-	feeRate     float64
+	FundAddress string
+	FeeRate     float64
 
-	msgTx  *wire.MsgTx
-	packet *psbt.Packet
+	MsgTx  *wire.MsgTx
+	Packet *psbt.Packet
 }
 
 func NewTxBuilder(client *client.Client, opts ...BuilderOpt) *TxBuilder {
 	builder := &TxBuilder{
 		version: wire.TxVersion,
-		params:  client.GetParams(),
-		client:  client,
+		Params:  client.GetParams(),
+		Client:  client,
 	}
 
 	for _, opt := range opts {
@@ -59,35 +59,35 @@ func NewTxBuilder(client *client.Client, opts ...BuilderOpt) *TxBuilder {
 }
 
 func (t *TxBuilder) Build() (*psbt.Packet, error) {
-	if len(t.inputs) == 0 && len(t.outputs) == 0 {
+	if len(t.Inputs) == 0 && len(t.Outputs) == 0 {
 		return nil, fmt.Errorf("PSBT packet must contain at least one input or output")
 	}
 
-	txIns, err := t.inputs.ToWire()
+	txIns, err := t.Inputs.ToWire()
 	if err != nil {
 		return nil, err
 	}
-	outputs, err := t.outputs.ToWire()
+	outputs, err := t.Outputs.ToWire()
 	if err != nil {
 		return nil, err
 	}
 
-	t.msgTx = wire.NewMsgTx(t.version)
+	t.MsgTx = wire.NewMsgTx(t.version)
 	for _, in := range txIns {
-		t.msgTx.AddTxIn(in)
+		t.MsgTx.AddTxIn(in)
 	}
 	for _, out := range outputs {
-		t.msgTx.AddTxOut(out)
+		t.MsgTx.AddTxOut(out)
 	}
 
-	if t.fundAddress != "" {
+	if t.FundAddress != "" {
 		err = t.FundRawTransaction()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	p, err := psbt.NewFromUnsignedTx(t.msgTx)
+	p, err := psbt.NewFromUnsignedTx(t.MsgTx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 
 func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
 	for i := range packet.Inputs {
-		txInput := t.inputs[i]
+		txInput := t.Inputs[i]
 
 		switch txInput.AddrType {
 		case types.P2PK, types.P2PKH:
