@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/btcsuite/btcd/btcutil/psbt"
-	"github.com/btcsuite/btcd/wire"
 )
 
 func EncodePsbt(packet *psbt.Packet) ([]byte, error) {
@@ -36,13 +35,4 @@ func EncodePsbtToRawTx(packet *psbt.Packet) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-func DecodeRawTx(rawTx []byte) (*wire.MsgTx, error) {
-	tx := wire.NewMsgTx(wire.TxVersion)
-	err := tx.Deserialize(bytes.NewReader(rawTx))
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
 }
