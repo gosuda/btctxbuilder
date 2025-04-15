@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
 	"github.com/rabbitprincess/btctxbuilder/utils"
 	"github.com/stretchr/testify/require"
@@ -128,17 +127,17 @@ func TestTransfer(t *testing.T) {
 		// 	1500, nil,
 		// },
 	} {
-		c := client.NewClient(test.net)
-		psbtPacket, err := NewTransferTx(c, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress)
+		params := types.GetParams(test.net)
+		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress, 0.0001)
 		require.NoError(t, err)
 
 		fromPrivKey := utils.MustDecode(test.fromPrivKey)
-		signedPacket, err := SignTx(c.GetParams(), psbtPacket, fromPrivKey)
+		signedPacket, err := SignTx(params, psbtPacket, fromPrivKey)
 
 		// verify tx
 		// pub, err := secp256k1.ParsePubKey(utils.MustDecode(fromPubKey))
 		// require.NoError(t, err)
-		// valid, err := VerifyTx(c.GetParams(), signedPacket, pub)
+		// valid, err := VerifyTx(params, signedPacket, pub)
 		// require.NoError(t, err)
 		// fmt.Println(valid)
 
@@ -152,7 +151,7 @@ func TestTransfer(t *testing.T) {
 		// require.NoError(t, err)
 		// fmt.Println("txid:", txid)
 
-		newTx, err := client.DecodeRawTransaction(signedTxHex)
+		newTx, err := types.DecodeRawTransaction(signedTxHex)
 		require.NoError(t, err)
 
 		jsonNewTx, _ := json.MarshalIndent(newTx, "", "\t")

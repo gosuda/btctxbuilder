@@ -13,10 +13,16 @@ import (
 
 func TestSignPsbtTx(t *testing.T) {
 	net := types.BTC_Testnet3
+	params := types.GetParams(net)
 
 	c := client.NewClient(net)
-	txBuild := NewTxBuilder(c)
-	txBuild.Inputs.AddInput(c, "0b2c23f5c2e6326c90cfa1d3925b0d83f4b08035ca6af8fd8f606385dfbc5822", 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
+	tx, err := c.GetRawTx("0b2c23f5c2e6326c90cfa1d3925b0d83f4b08035ca6af8fd8f606385dfbc5822")
+	require.NoError(t, err)
+	msgTx, err := types.DecodeRawTransaction(tx)
+	require.NoError(t, err)
+
+	txBuild := NewTxBuilder(params)
+	txBuild.Inputs.AddInput(params, msgTx, 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
 	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
 	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
 	packet, err := txBuild.Build()

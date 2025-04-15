@@ -54,7 +54,7 @@ func (t *TxBuilder) FundRawTransaction() error {
 			return fmt.Errorf("insufficient balance | total : %v | to amount : %v", totalInput, totalOutput)
 		}
 		for _, utxo := range selected {
-			if err = t.Inputs.AddInput(t.Client, utxo.Txid, utxo.Vout, utxo.Value, t.FromAddress); err != nil {
+			if err = t.Inputs.AddInput(t.Params, utxo.RawTx, utxo.Vout, utxo.Value, t.FromAddress); err != nil {
 				return err
 			}
 		}

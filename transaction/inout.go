@@ -5,7 +5,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/script"
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
@@ -25,43 +24,20 @@ type TxInput struct {
 
 type TxInputs []*TxInput
 
-func (t *TxInputs) AddInput(c *client.Client, txid string, vout uint32, amount int64, address string) error {
-	// tx, err := c.GetTx(txid)
-	// if err != nil {
-	// 	return err
-	// }
-	// if vout >= uint32(len(tx.Vout)) {
-	// 	return fmt.Errorf("vout %d out of range", vout)
-	// }
-	// prev := &tx.Vout[vout]
-
-	rawTx, err := c.GetRawTx(txid)
-	if err != nil {
-		return err
-	}
-	msgTx, err := client.DecodeRawTransaction(rawTx)
-	if err != nil {
-		return err
-	}
-	prevVout := msgTx.TxOut[vout]
+func (t *TxInputs) AddInput(params *chaincfg.Params, rawTx *wire.MsgTx, vout uint32, amount int64, address string) error {
+	prevVout := rawTx.TxOut[vout]
 
 	btcAmount := btcutil.Amount(amount)
-	btcAddress, _, err := types.DecodeAddress(address, c.GetParams())
+	btcAddress, _, err := types.DecodeAddress(address, params)
 	if err != nil {
 		return err
 	}
 	AddrType := types.GetAddressType(btcAddress)
 
-	// vin := &types.Vin{
-	// 	Txid:    txid,
-	// 	Vout:    vout,
-	// 	Prevout: prev,
-	// }
-
 	*t = append(*t, &TxInput{
-		txid:     txid,
+		txid:     rawTx.TxID(),
 		vout:     vout,
-		tx:       msgTx,
+		tx:       rawTx,
 		prevVout: prevVout,
 		// Vin:      vin,
 		Amount:   btcAmount,

@@ -2,7 +2,7 @@ package ordinals
 
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
-	"github.com/rabbitprincess/btctxbuilder/client"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/rabbitprincess/btctxbuilder/transaction"
 )
 
@@ -24,8 +24,8 @@ import (
 // }
 
 // 1. Build the empty reveal transactions
-func buildRevealTxs(c *client.Client, inscriptionDatas []*InscriptionData, feeRate float64) (revealTx []*psbt.Packet, err error) {
-	builder := transaction.NewTxBuilder(c)
+func buildRevealTxs(params *chaincfg.Params, inscriptionDatas []*InscriptionData, feeRate float64) (revealTx []*psbt.Packet, err error) {
+	builder := transaction.NewTxBuilder(params)
 	_ = builder
 	for _, inscriptionData := range inscriptionDatas {
 		_ = inscriptionData

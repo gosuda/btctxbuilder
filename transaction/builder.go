@@ -7,7 +7,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
@@ -29,7 +28,6 @@ func WithFundAddress(address string) BuilderOpt {
 
 type TxBuilder struct {
 	version int32
-	Client  *client.Client
 	Params  *chaincfg.Params
 
 	FromAddress string
@@ -45,11 +43,10 @@ type TxBuilder struct {
 	Packet *psbt.Packet
 }
 
-func NewTxBuilder(client *client.Client, opts ...BuilderOpt) *TxBuilder {
+func NewTxBuilder(params *chaincfg.Params, opts ...BuilderOpt) *TxBuilder {
 	builder := &TxBuilder{
 		version: wire.TxVersion,
-		Params:  client.GetParams(),
-		Client:  client,
+		Params:  params,
 	}
 
 	for _, opt := range opts {

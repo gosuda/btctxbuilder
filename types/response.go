@@ -1,5 +1,7 @@
 package types
 
+import "github.com/btcsuite/btcd/wire"
+
 type Block struct {
 	ID                string  `json:"id"`
 	Height            uint64  `json:"height"`
@@ -52,6 +54,8 @@ type Utxo struct {
 	Vout   uint32      `json:"vout"`
 	Status BlockStatus `json:"status"`
 	Value  int64       `json:"value"`
+
+	RawTx *wire.MsgTx `json:"raw_tx,omitempty"`
 }
 
 type BlockStatus struct {

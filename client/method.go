@@ -45,6 +45,25 @@ func (c *Client) GetUTXO(address string) ([]*types.Utxo, error) {
 	return RequestGet[[]*types.Utxo](c, fmt.Sprintf("/address/%s/utxo", address))
 }
 
+func (c *Client) GetUTXOWithRawTx(address string) ([]*types.Utxo, error) {
+	utxos, err := c.GetUTXO(address)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, utxo := range utxos {
+		rawTx, err := c.GetRawTx(utxo.Txid)
+		if err != nil {
+			return nil, err
+		}
+		utxo.RawTx, err = types.DecodeRawTransaction(rawTx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return utxos, nil
+}
+
 func (c *Client) FeeEstimate() (types.FeeEstimate, error) {
 	return RequestGet[types.FeeEstimate](c, "/fee-estimates")
 }

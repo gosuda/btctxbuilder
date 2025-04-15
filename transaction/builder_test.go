@@ -3,23 +3,17 @@ package transaction
 import (
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/client"
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
-
-func newClient(net types.Network) *client.Client {
-	return client.NewClient(net)
-}
 
 // support for single private key address formats (legacy/segwit_nested/segwit_native/taproot_keypath)
 func TestSignTx(t *testing.T) {
 	// legacy address
 	net := types.BTC_Testnet3
-	client := newClient(net)
-	txBuilder := NewTxBuilder(client)
+	txBuilder := NewTxBuilder(types.GetParams(net))
 	_ = txBuilder
 	// txBuilder.inputs.AddInput(nil, "c44a7f98434e5e875a573339f77d36022c79c525771fa88c72fa53f3a55eeaf7", 1, "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", 1488430)
-	// txBuilder.outputs.AddOutputTransfer(client.GetParams(), "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", 1488200)
+	// txBuilder.outputs.AddOutputTransfer(types.GetParams(net), "mouQtmBWDS7JnT65Grj2tPzdSmGKJgRMhE", 1488200)
 	// psbt, err := txBuilder.Build()
 
 	// assert.Nil(t, err)

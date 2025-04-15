@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
-	"github.com/rabbitprincess/btctxbuilder/client"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/rabbitprincess/btctxbuilder/types"
 )
 
-func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) (*psbt.Packet, error) {
+func NewTransferTx(params *chaincfg.Params, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string, fee float64) (*psbt.Packet, error) {
 	var err error
-	builder := NewTxBuilder(c)
+
+	builder := NewTxBuilder(params)
 	builder.FromAddress = fromAddress
 
 	// fund fee outputs
@@ -19,27 +20,15 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	}
 
 	// estimate fee
-	fees, err := c.FeeEstimate()
-	if err != nil {
-		return nil, err
-	}
-	builder.FeeRate = fees["1"]
+	builder.FeeRate = fee
 
 	// create outputs
 	for address, amount := range toAddress {
-		if err = builder.Outputs.AddOutputTransfer(c.GetParams(), address, amount); err != nil {
+		if err = builder.Outputs.AddOutputTransfer(params, address, amount); err != nil {
 			return nil, err
 		}
 	}
 	toTotal := builder.Outputs.AmountTotal()
-
-	// get utxo
-	if len(utxos) == 0 { // if no utxos provided, get utxos from client
-		utxos, err = builder.Client.GetUTXO(fromAddress)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	// select utxo
 	selected, unselected, err := SelectUtxo(utxos, int64(toTotal))
@@ -48,7 +37,7 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	}
 	// add inputs
 	for _, utxo := range selected {
-		if err = builder.Inputs.AddInput(c, utxo.Txid, utxo.Vout, utxo.Value, fromAddress); err != nil {
+		if err = builder.Inputs.AddInput(params, utxo.RawTx, utxo.Vout, utxo.Value, fromAddress); err != nil {
 			return nil, err
 		}
 	}
@@ -59,6 +48,6 @@ func NewTransferTx(c *client.Client, utxos []*types.Utxo, fromAddress string, to
 	return builder.Build()
 }
 
-func NewRunestoneEdictTx(c *client.Client, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) {
+func NewRunestoneEdictTx(params *chaincfg.Params, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string) {
 
 }
