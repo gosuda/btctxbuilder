@@ -4,8 +4,8 @@ go 1.23.2
 
 require (
 	github.com/benma/miniscript-go v0.0.0-20240226152043-f7c34099edf9
-	github.com/btcsuite/btcd v0.24.2
-	github.com/btcsuite/btcd/btcec/v2 v2.3.2
+	github.com/btcsuite/btcd v0.24.3-0.20250407183411-cd05d9ad3d05
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.9
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0

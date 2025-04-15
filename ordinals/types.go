@@ -1,8 +1,6 @@
 package ordinals
 
-const (
-	
-)
+const ()
 
 type InscriptionData struct {
 	ContentType string `json:"contentType"`
