@@ -131,7 +131,7 @@ func TestTransfer(t *testing.T) {
 		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress, 0.0001)
 		require.NoError(t, err)
 
-		fromPrivKey := utils.MustDecode(test.fromPrivKey)
+		fromPrivKey := utils.HexMustDecode(test.fromPrivKey)
 		signedPacket, err := SignTx(params, psbtPacket, fromPrivKey)
 
 		// verify tx

@@ -38,7 +38,7 @@ func DecodePSBT(psbtStr string) (*psbt.Packet, error) {
 
 	isHex := utils.IsHex(psbtStr)
 	if isHex {
-		psbtRaw, err = utils.Decode(psbtStr)
+		psbtRaw, err = utils.HexDecode(psbtStr)
 		if err != nil {
 			return nil, err
 		}

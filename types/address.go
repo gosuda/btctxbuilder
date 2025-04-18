@@ -34,7 +34,7 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, params *chaincfg.Params) 
 		if err != nil {
 			return "", err
 		}
-		return utils.Encode(addr.ScriptAddress()), nil
+		return utils.HexEncode(addr.ScriptAddress()), nil
 	case P2PKH:
 		addr, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(publicKey), params)
 		if err != nil {

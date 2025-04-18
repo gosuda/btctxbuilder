@@ -5,24 +5,24 @@ import (
 	"strings"
 )
 
-func Encode(bytes []byte) string {
+func HexEncode(bytes []byte) string {
 	return hex.EncodeToString(bytes)
 }
 
-func EncodeWith0x(bytes []byte) string {
-	return AddPrefix(Encode(bytes))
+func HexEncodeWith0x(bytes []byte) string {
+	return AddHexPrefix(HexEncode(bytes))
 }
 
-func MustDecode(hexString string) []byte {
-	data, err := Decode(hexString)
+func HexMustDecode(hexString string) []byte {
+	data, err := HexDecode(hexString)
 	if err != nil {
 		panic(err)
 	}
 	return data
 }
 
-func Decode(hexString string) ([]byte, error) {
-	hexString = TrimPrefix(hexString)
+func HexDecode(hexString string) ([]byte, error) {
+	hexString = TrimHexPrefix(hexString)
 
 	if len(hexString)%2 != 0 {
 		hexString = "0" + hexString
@@ -32,7 +32,7 @@ func Decode(hexString string) ([]byte, error) {
 }
 
 func IsHex(str string) bool {
-	str = TrimPrefix(str)
+	str = TrimHexPrefix(str)
 
 	if len(str)%2 != 0 {
 		return false
@@ -46,19 +46,19 @@ func IsHex(str string) bool {
 	return true
 }
 
-func HasPrefix(str string) bool {
+func HasHexPrefix(str string) bool {
 	return strings.HasPrefix(str, "0x") || strings.HasPrefix(str, "0X")
 }
 
-func TrimPrefix(s string) string {
-	if HasPrefix(s) {
+func TrimHexPrefix(s string) string {
+	if HasHexPrefix(s) {
 		return s[2:]
 	}
 	return s
 }
 
-func AddPrefix(s string) string {
-	if !HasPrefix(s) {
+func AddHexPrefix(s string) string {
+	if !HasHexPrefix(s) {
 		return "0x" + s
 	}
 	return s

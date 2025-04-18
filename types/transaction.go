@@ -22,7 +22,7 @@ func DecodeRawTransaction(rawTx string) (*wire.MsgTx, error) {
 	// Parse the raw transaction
 	var rawTxBytes []byte
 	if utils.IsHex(rawTx) {
-		rawTxBytes = utils.MustDecode(rawTx)
+		rawTxBytes = utils.HexMustDecode(rawTx)
 	} else {
 		rawTxBytes = []byte(rawTx)
 	}

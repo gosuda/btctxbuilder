@@ -19,7 +19,7 @@ const (
 	// ClientURL = "https://mempool.space"
 )
 
-func NewClient(net types.Network) *Client {
+func NewClient(net types.Network) (*Client, error) {
 	client := &Client{
 		http:   http.DefaultClient,
 		params: types.GetParams(net),
@@ -30,14 +30,19 @@ func NewClient(net types.Network) *Client {
 		client.params = &chaincfg.MainNetParams
 		client.url = ClientURL + "/api"
 	case types.BTC_Testnet3:
-		client.params = &chaincfg.RegressionNetParams
+		client.params = &chaincfg.TestNet3Params
 		client.url = ClientURL + "/testnet/api"
+	case types.BTC_Testnet4:
+		client.params = &chaincfg.TestNet4Params
+		client.url = ClientURL + "/testnet4/api"
 	case types.BTC_Signet:
 		client.params = &chaincfg.SigNetParams
 		client.url = ClientURL + "/signet/api"
+	default:
+		return nil, fmt.Errorf("network not supported [%s]", net)
 	}
 
-	return client
+	return client, nil
 }
 
 type Client struct {

@@ -13,7 +13,7 @@ type Network string
 const (
 	BTC               Network = "btc"
 	BTC_Testnet3      Network = "btc-testnet3"
-	BTC_testnet4      Network = "btc-testnet4"
+	BTC_Testnet4      Network = "btc-testnet4"
 	BTC_Regressionnet Network = "btc-regtest"
 	BTC_Signet        Network = "btc-signet"
 
@@ -33,7 +33,7 @@ func init() {
 	netParams = map[Network]*chaincfg.Params{
 		BTC:               getBTCMainNetParams(),
 		BTC_Testnet3:      getBTCTestNetParams(),
-		BTC_testnet4:      getBTCTestNet4Params(),
+		BTC_Testnet4:      getBTCTestNet4Params(),
 		BTC_Regressionnet: getBTCRegresstionNetParams(),
 		BTC_Signet:        getBTCSignetParams(),
 
