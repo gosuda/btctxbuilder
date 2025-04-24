@@ -17,12 +17,18 @@ const (
 	BTC_Regressionnet Network = "btc-regtest"
 	BTC_Signet        Network = "btc-signet"
 
-	DGB  Network = "dgb"  // digibyte
-	QTUM Network = "qtum" // qtum
-	RVN  Network = "rvn"  // raven
-	BTG  Network = "btg"  // bitcoin gold
-	BCH  Network = "bch"  // bitcoin cash
-	DOGE Network = "doge" // dogecoin
+	DGB           Network = "dgb" // digibyte
+	DGB_Testnet3  Network = "dgb-testnet3"
+	QTUM          Network = "qtum" // qtum
+	QTUM_Testnet3 Network = "qtum-testnet3"
+	RVN           Network = "rvn" // raven
+	BTG           Network = "btg" // bitcoin gold
+	BTG_Testnet3  Network = "btg-testnet3"
+	BSV           Network = "bsv" // bitcoin sv
+	BSV_Testnet3  Network = "bsv-testnet3"
+	BCH           Network = "bch"  // bitcoin cash
+	DOGE          Network = "doge" // dogecoin
+	DOGE_Testnet3 Network = "doge-testnet3"
 )
 
 var (
@@ -37,12 +43,17 @@ func init() {
 		BTC_Regressionnet: getBTCRegresstionNetParams(),
 		BTC_Signet:        getBTCSignetParams(),
 
-		DGB:  getDGBMainNetParams(),
-		QTUM: getQTUMMainNetParams(),
-		RVN:  getRVNMainNetParams(),
-		BTG:  getBTGMainNetParams(),
-		BCH:  getBCHmainNetParams(),
-		DOGE: getDOGEMainNetParams(),
+		DGB:           getDGBMainNetParams(),
+		DGB_Testnet3:  getDOGETestNet3Params(),
+		QTUM:          getQTUMMainNetParams(),
+		RVN:           getRVNMainNetParams(),
+		BTG:           getBTGMainNetParams(),
+		BTG_Testnet3:  getBTGTestNetParams(),
+		BCH:           getBCHmainNetParams(),
+		DOGE:          getDOGEMainNetParams(),
+		DOGE_Testnet3: getDOGETestNet3Params(),
+		BSV:           getBSVMainNetParams(),
+		BSV_Testnet3:  getBSVTestNetParams(),
 	}
 }
 
@@ -87,6 +98,17 @@ func getDGBMainNetParams() *chaincfg.Params {
 	return &params
 }
 
+func getDOGETestNet3Params() *chaincfg.Params {
+	params := chaincfg.TestNet3Params
+	params.Net = 0xfcc1b7dc
+
+	params.PubKeyHashAddrID = 113 // base58 prefix: n
+	params.ScriptHashAddrID = 196 // base58 prefix: 2
+	params.Bech32HRPSegwit = "doget"
+
+	return &params
+}
+
 // GetQTUMMainNetParams QTUM
 func getQTUMMainNetParams() *chaincfg.Params {
 	params := chaincfg.MainNetParams
@@ -126,6 +148,39 @@ func getBTGMainNetParams() *chaincfg.Params {
 	mainnetparams.Bech32HRPSegwit = "btg"
 
 	return &mainnetparams
+}
+
+func getBTGTestNetParams() *chaincfg.Params {
+	params := chaincfg.TestNet3Params
+	params.Net = 0x456e48fd
+
+	params.PubKeyHashAddrID = 111 // commonly used for testnets
+	params.ScriptHashAddrID = 196
+	params.Bech32HRPSegwit = "btgt"
+
+	return &params
+}
+
+func getBSVMainNetParams() *chaincfg.Params {
+	params := chaincfg.MainNetParams
+	params.Net = 0xe3e1f3e8 // BSV mainnet magic number
+
+	params.PubKeyHashAddrID = 0x00 // prefix: 1
+	params.ScriptHashAddrID = 0x05 // prefix: 3
+	params.Bech32HRPSegwit = "bsv" // optional
+
+	return &params
+}
+
+func getBSVTestNetParams() *chaincfg.Params {
+	params := chaincfg.TestNet3Params
+	params.Net = 0xf4e5f3f4 // BSV testnet magic number
+
+	params.PubKeyHashAddrID = 0x6f // prefix: m or n
+	params.ScriptHashAddrID = 0xc4 // prefix: 2
+	params.Bech32HRPSegwit = "bsv" // optional
+
+	return &params
 }
 
 // getBCHmainNetParams BCH
