@@ -40,7 +40,7 @@ func renderStatusBox(m model) string {
 		fmt.Sprintf("🌐 Network:     %s", m.net),
 		fmt.Sprintf("📤 From:        %s", m.from),
 		toMap,
-		fmt.Sprintf("💰 Fund Addr:   %s", m.fundAddress),
+		fmt.Sprintf("💰 Privatekey:   %s", strings.Repeat("X", len(m.privateKey))),
 	)
 
 	return lipgloss.NewStyle().

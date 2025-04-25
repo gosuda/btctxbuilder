@@ -15,7 +15,7 @@ type model struct {
 	from        string
 	toList      []string
 	amountList  []int64
-	fundAddress string
+	privateKey  string
 	client      *client.Client
 	errorMsg    string
 	inputBuffer string
@@ -72,7 +72,7 @@ func (m model) handleStep(input string) (model, tea.Cmd) {
 	case 2:
 		return m.addRecipient(input)
 	case 3:
-		m.setFundAddress(input)
+		m.setPrivateKey(input)
 		return m, m.transfer
 	}
 	return m, nil
@@ -117,12 +117,8 @@ func (m model) addRecipient(input string) (model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) setFundAddress(input string) {
-	if input == "" {
-		m.fundAddress = m.from
-	} else {
-		m.fundAddress = input
-	}
+func (m *model) setPrivateKey(input string) {
+	m.privateKey = input
 }
 
 func returnError(msg string) tea.Cmd {

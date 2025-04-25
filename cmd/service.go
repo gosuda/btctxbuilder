@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,11 +25,18 @@ func (m model) transfer() tea.Msg {
 	for i := 0; i < len(m.toList); i++ {
 		toMap[m.toList[i]] = m.amountList[i]
 	}
+	params := types.GetParams(types.Network(m.net))
 
-	psbtPacket, err := transaction.NewTransferTx(m.client.GetParams(), utxos, m.from, toMap, "", fee)
+	psbtPacket, err := transaction.NewTransferTx(params, utxos, m.from, toMap, "", fee)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Failed to create transaction: %s", err))
 	}
+
+	privKey, err := hex.DecodeString(m.privateKey)
+	if err != nil {
+		return errorMsg(fmt.Sprintf("Failed to decode private key: %s", err))
+	}
+	transaction.SignTx(params, psbtPacket, privKey)
 
 	rawTx, err := types.EncodePsbtToRawTx(psbtPacket)
 	if err != nil {
