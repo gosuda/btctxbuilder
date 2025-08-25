@@ -15,7 +15,6 @@ type TxInput struct {
 
 	tx       *wire.MsgTx
 	prevVout *wire.TxOut
-	// *types.Vin
 
 	Amount   btcutil.Amount
 	Address  btcutil.Address
@@ -39,7 +38,6 @@ func (t *TxInputs) AddInput(params *chaincfg.Params, rawTx *wire.MsgTx, vout uin
 		vout:     vout,
 		tx:       rawTx,
 		prevVout: prevVout,
-		// Vin:      vin,
 		Amount:   btcAmount,
 		Address:  btcAddress,
 		AddrType: AddrType,

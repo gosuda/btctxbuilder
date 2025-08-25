@@ -29,7 +29,8 @@ func TestSignPsbtTx(t *testing.T) {
 	packet, err := txBuild.Build()
 	require.NoError(t, err)
 
-	signedPacket, err := SignTx(c.GetParams(), packet, utils.HexMustDecode("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37"))
+	signer := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
+	signedPacket, err := SignTx(c.GetParams(), packet, signer.Sign, signer.PubKey())
 	require.NoError(t, err)
 	rawTx, err := types.EncodePsbtToRawTx(signedPacket)
 	require.NoError(t, err)

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -131,8 +130,8 @@ func TestTransfer(t *testing.T) {
 		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress, 0.0001)
 		require.NoError(t, err)
 
-		fromPrivKey := utils.HexMustDecode(test.fromPrivKey)
-		signedPacket, err := SignTx(params, psbtPacket, fromPrivKey)
+		signer := types.NewECDSASigner(test.fromPrivKey)
+		signedPacket, err := SignTx(params, psbtPacket, signer.Sign, signer.PubKey())
 
 		// verify tx
 		// pub, err := secp256k1.ParsePubKey(utils.MustDecode(fromPubKey))
