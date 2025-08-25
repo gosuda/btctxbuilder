@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/rabbitprincess/btctxbuilder/transaction"
-	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
+	"github.com/gosuda/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/utils"
+
+	"github.com/gosuda/btctxbuilder/transaction"
 )
 
 func (m model) transfer() tea.Msg {
@@ -32,11 +32,11 @@ func (m model) transfer() tea.Msg {
 		return errorMsg(fmt.Sprintf("Failed to create transaction: %s", err))
 	}
 
-	privKey, err := hex.DecodeString(m.privateKey)
+	signer, err := types.NewECDSASigner(m.privateKey)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Failed to decode private key: %s", err))
 	}
-	transaction.SignTx(params, psbtPacket, privKey)
+	transaction.SignTx(params, psbtPacket, signer.Sign, signer.PubKey())
 
 	rawTx, err := types.EncodePsbtToRawTx(psbtPacket)
 	if err != nil {

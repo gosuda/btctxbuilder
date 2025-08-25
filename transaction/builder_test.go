@@ -3,7 +3,7 @@ package transaction
 import (
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 // support for single private key address formats (legacy/segwit_nested/segwit_native/taproot_keypath)

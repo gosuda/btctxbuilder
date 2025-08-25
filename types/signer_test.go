@@ -13,7 +13,8 @@ import (
 )
 
 func TestECDSASigner_GenerateAndSign(t *testing.T) {
-	s := NewECDSASigner("")
+	s, err := NewECDSASigner("")
+	require.NoError(t, err)
 	msgHash := sha256.Sum256([]byte("hello world!"))
 
 	der, err := s.Sign(msgHash[:])
@@ -30,7 +31,9 @@ func TestECDSASigner_FromHexAndSign(t *testing.T) {
 	base, _ := btcec.NewPrivateKey()
 	privHex := hex.EncodeToString(base.Serialize())
 
-	s := NewECDSASigner(privHex)
+	s, err := NewECDSASigner(privHex)
+	require.NoError(t, err)
+
 	gotPub := s.PubKey()
 	wantPub := base.PubKey().SerializeCompressed()
 	require.Equal(t, hex.EncodeToString(gotPub), hex.EncodeToString(wantPub), "pubkey mismatch")
@@ -47,7 +50,8 @@ func TestECDSASigner_FromHexAndSign(t *testing.T) {
 }
 
 func TestNewSchnorrSigner_GenerateTweakedAndSign(t *testing.T) {
-	s := NewSchnorrSigner("")
+	s, err := NewSchnorrSigner("")
+	require.NoError(t, err)
 
 	msgHash := sha256.Sum256([]byte("hello world!"))
 	sigBytes, err := s.Sign(msgHash[:])
@@ -80,22 +84,15 @@ func TestNewSchnorrSigner_UseProvidedTweakedKey(t *testing.T) {
 	tweakedPriv, _ := btcec.PrivKeyFromBytes(k.Bytes())
 
 	hexTweaked := hex.EncodeToString(tweakedPriv.Serialize())
-	s := NewSchnorrSigner(hexTweaked)
-	if s == nil || s.privkey == nil {
-		t.Fatalf("expected non-nil signer from tweaked hex")
-	}
+	s, err := NewSchnorrSigner(hexTweaked)
+	require.NoError(t, err)
 
 	// Sign & verify
 	msgHash := sha256.Sum256([]byte("hello world!"))
 	sigBytes, err := s.Sign(msgHash[:])
-	if err != nil {
-		t.Fatalf("sign failed: %v", err)
-	}
+	require.NoError(t, err)
 	sig, err := schnorr.ParseSignature(sigBytes)
-	if err != nil {
-		t.Fatalf("parse schnorr sig: %v", err)
-	}
-	if !sig.Verify(msgHash[:], s.privkey.PubKey()) {
-		t.Fatalf("verify failed with provided tweaked key")
-	}
+	require.NoError(t, err)
+	verify := sig.Verify(msgHash[:], s.privkey.PubKey())
+	require.True(t, verify, "schnorr signature verification failed")
 }

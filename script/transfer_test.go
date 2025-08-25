@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/rabbitprincess/btctxbuilder/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 func TestEncodeTransferScript(t *testing.T) {

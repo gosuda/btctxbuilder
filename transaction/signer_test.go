@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/client"
-	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gosuda/btctxbuilder/client"
+	"github.com/gosuda/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 func TestSignPsbtTx(t *testing.T) {
@@ -29,7 +30,8 @@ func TestSignPsbtTx(t *testing.T) {
 	packet, err := txBuild.Build()
 	require.NoError(t, err)
 
-	signer := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
+	signer, err := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
+	require.NoError(t, err)
 	signedPacket, err := SignTx(c.GetParams(), packet, signer.Sign, signer.PubKey())
 	require.NoError(t, err)
 	rawTx, err := types.EncodePsbtToRawTx(signedPacket)

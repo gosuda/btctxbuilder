@@ -3,7 +3,8 @@ package script
 import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/rabbitprincess/btctxbuilder/types"
+
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 func EncodeMultiSigScript(network types.Network, pubKeys [][]byte, nRequired int) ([]byte, error) {

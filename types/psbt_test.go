@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/utils"
+	"github.com/gosuda/btctxbuilder/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

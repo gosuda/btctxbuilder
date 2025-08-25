@@ -3,7 +3,8 @@ package transaction
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/rabbitprincess/btctxbuilder/types"
+
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 func NewTransferTx(params *chaincfg.Params, utxos []*types.Utxo, fromAddress string, toAddress map[string]int64, fundAddress string, fee float64) (*psbt.Packet, error) {

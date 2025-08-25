@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/rabbitprincess/btctxbuilder/client"
-	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/client"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 type model struct {

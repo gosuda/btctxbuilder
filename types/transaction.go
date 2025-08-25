@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/utils"
+
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 type TransactionType string

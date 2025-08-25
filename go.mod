@@ -1,6 +1,6 @@
-module github.com/rabbitprincess/btctxbuilder
+module github.com/gosuda/btctxbuilder
 
-go 1.23.2
+go 1.24.6
 
 require (
 	github.com/benma/miniscript-go v0.0.0-20240226152043-f7c34099edf9

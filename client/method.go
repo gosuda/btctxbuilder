@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 
-	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 func (c *Client) BestBlockHeight() (uint64, error) {

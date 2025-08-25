@@ -7,7 +7,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/types"
+
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 type BuilderOpt func(*TxBuilder) error

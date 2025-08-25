@@ -3,7 +3,8 @@ package ordinals
 import (
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/rabbitprincess/btctxbuilder/transaction"
+
+	"github.com/gosuda/btctxbuilder/transaction"
 )
 
 // func NewInscribeTx(c *client.Client, fromAddress string, fundAddress string, inscriptionDatas []*InscriptionData) (revealTx []*psbt.Packet, commitTx *psbt.Packet, err error) {

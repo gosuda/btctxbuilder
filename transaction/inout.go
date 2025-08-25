@@ -5,8 +5,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/rabbitprincess/btctxbuilder/script"
-	"github.com/rabbitprincess/btctxbuilder/types"
+
+	"github.com/gosuda/btctxbuilder/script"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 type TxInput struct {

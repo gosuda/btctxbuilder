@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 const (

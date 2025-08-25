@@ -7,7 +7,8 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/rabbitprincess/btctxbuilder/utils"
+
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 type AddrType string

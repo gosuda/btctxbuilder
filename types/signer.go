@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -16,21 +17,25 @@ type ECDSASigner struct {
 	privkey *btcec.PrivateKey
 }
 
-func NewECDSASigner(privkeyHex string) *ECDSASigner {
+func NewECDSASigner(privkeyHex string) (*ECDSASigner, error) {
 	var privkey *btcec.PrivateKey
+	var err error
 	if privkeyHex == "" {
-		privkey, _ = btcec.NewPrivateKey()
+		privkey, err = btcec.NewPrivateKey()
 	} else {
 		privkeyRaw, err := hex.DecodeString(privkeyHex)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		privkey, _ = btcec.PrivKeyFromBytes(privkeyRaw)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return &ECDSASigner{
 		privkey: privkey,
-	}
+	}, nil
 }
 
 func (r *ECDSASigner) Sign(msgHash []byte) ([]byte, error) {
@@ -49,12 +54,15 @@ type SchnorrSigner struct {
 	privkey *btcec.PrivateKey
 }
 
-func NewSchnorrSigner(tweakedPrivkeyHex string) *SchnorrSigner {
+func NewSchnorrSigner(tweakedPrivkeyHex string) (*SchnorrSigner, error) {
 	var privkey *btcec.PrivateKey
 
 	if tweakedPrivkeyHex == "" {
 		// 1) generate internal key
-		internal, _ := btcec.NewPrivateKey()
+		internal, err := btcec.NewPrivateKey()
+		if err != nil {
+			return nil, err
+		}
 		// 2) evenize as per BIP-340
 		internalEven := evenizePriv(internal)
 		// 3) x-only internal pubkey
@@ -70,18 +78,18 @@ func NewSchnorrSigner(tweakedPrivkeyHex string) *SchnorrSigner {
 		k.Add(k, t)
 		k.Mod(k, n)
 		if k.Sign() == 0 {
-			return nil // invalid (extremely unlikely)
+			return nil, fmt.Errorf("/ invalid (extremely unlikely)")
 		}
 		privkey, _ = btcec.PrivKeyFromBytes(k.Bytes())
 	} else {
 		raw, err := hex.DecodeString(tweakedPrivkeyHex)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		privkey, _ = btcec.PrivKeyFromBytes(raw)
 	}
 
-	return &SchnorrSigner{privkey: privkey}
+	return &SchnorrSigner{privkey: privkey}, nil
 }
 
 // Sign returns a 64-byte BIP-340 signature using the (already-tweaked) private key.

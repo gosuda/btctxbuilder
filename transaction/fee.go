@@ -7,8 +7,9 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
-	"github.com/rabbitprincess/btctxbuilder/script"
-	"github.com/rabbitprincess/btctxbuilder/types"
+
+	"github.com/gosuda/btctxbuilder/script"
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 const (

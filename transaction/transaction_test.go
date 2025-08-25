@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gosuda/btctxbuilder/types"
 )
 
 // p2pk
@@ -130,7 +131,8 @@ func TestTransfer(t *testing.T) {
 		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress, 0.0001)
 		require.NoError(t, err)
 
-		signer := types.NewECDSASigner(test.fromPrivKey)
+		signer, err := types.NewECDSASigner(test.fromPrivKey)
+		require.NoError(t, err)
 		signedPacket, err := SignTx(params, psbtPacket, signer.Sign, signer.PubKey())
 
 		// verify tx

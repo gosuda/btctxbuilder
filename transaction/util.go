@@ -8,8 +8,8 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/rabbitprincess/btctxbuilder/types"
-	"github.com/rabbitprincess/btctxbuilder/utils"
+	"github.com/gosuda/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 func SelectUtxo(utxos []*types.Utxo, amount int64) (selected []*types.Utxo, unselected []*types.Utxo, err error) {

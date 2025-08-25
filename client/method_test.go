@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rabbitprincess/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/types"
 	"github.com/stretchr/testify/require"
 )
 
