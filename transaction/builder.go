@@ -13,13 +13,6 @@ import (
 
 type BuilderOpt func(*TxBuilder) error
 
-func WithVersion(version int32) BuilderOpt {
-	return func(t *TxBuilder) error {
-		t.version = version
-		return nil
-	}
-}
-
 func WithFundAddress(address string) BuilderOpt {
 	return func(t *TxBuilder) error {
 		t.FundAddress = address
@@ -28,8 +21,7 @@ func WithFundAddress(address string) BuilderOpt {
 }
 
 type TxBuilder struct {
-	version int32
-	Params  *chaincfg.Params
+	Params *chaincfg.Params
 
 	FromAddress string
 	Utxos       []*types.Utxo
@@ -46,8 +38,7 @@ type TxBuilder struct {
 
 func NewTxBuilder(params *chaincfg.Params, opts ...BuilderOpt) *TxBuilder {
 	builder := &TxBuilder{
-		version: wire.TxVersion,
-		Params:  params,
+		Params: params,
 	}
 
 	for _, opt := range opts {
@@ -70,7 +61,7 @@ func (t *TxBuilder) Build() (*psbt.Packet, error) {
 		return nil, err
 	}
 
-	t.MsgTx = wire.NewMsgTx(t.version)
+	t.MsgTx = wire.NewMsgTx(wire.TxVersion)
 	for _, in := range txIns {
 		t.MsgTx.AddTxIn(in)
 	}
