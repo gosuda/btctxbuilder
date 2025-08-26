@@ -27,16 +27,15 @@ func (m model) transfer() tea.Msg {
 	}
 	params := types.GetParams(types.Network(m.net))
 
-	psbtPacket, err := transaction.NewTransferTx(params, utxos, m.from, toMap, "", fee)
-	if err != nil {
-		return errorMsg(fmt.Sprintf("Failed to create transaction: %s", err))
-	}
-
 	signer, err := types.NewECDSASigner(m.privateKey)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Failed to decode private key: %s", err))
 	}
-	transaction.SignTx(params, psbtPacket, signer.Sign, signer.PubKey())
+
+	psbtPacket, err := transaction.NewTransferTx(params, utxos, m.from, toMap, m.from, signer.Sign, signer.PubKey(), fee)
+	if err != nil {
+		return errorMsg(fmt.Sprintf("Failed to create transaction: %s", err))
+	}
 
 	rawTx, err := types.EncodePsbtToRawTx(psbtPacket)
 	if err != nil {
