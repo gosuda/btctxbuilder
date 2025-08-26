@@ -1,167 +1,219 @@
 package transaction
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 
 	"github.com/gosuda/btctxbuilder/types"
 )
 
-type BuilderOpt func(*TxBuilder) error
+// -----------------------------------------------------------------------------
+// context
+// -----------------------------------------------------------------------------
 
-func WithFundAddress(address string) BuilderOpt {
-	return func(t *TxBuilder) error {
-		t.FundAddress = address
+type txctx struct {
+	params     *chaincfg.Params
+	feeRate    float64
+	fromAddr   string
+	changeAddr string
+	utxos      []*types.Utxo
+	Inputs     TxInputs
+	Outputs    TxOutputs
+	pkt        *psbt.Packet
+
+	errs []error // accumulate all errors
+}
+
+func (c *txctx) addErr(err error) {
+	if err != nil {
+		c.errs = append(c.errs, err)
+	}
+}
+
+func (c *txctx) Err() error {
+	if len(c.errs) == 0 {
 		return nil
 	}
+	return errors.Join(c.errs...)
 }
 
-type TxBuilder struct {
-	Params *chaincfg.Params
+// -----------------------------------------------------------------------------
+// states
+// -----------------------------------------------------------------------------
 
-	FromAddress string
-	Utxos       []*types.Utxo
+func NewTxBuilder(params *chaincfg.Params) BInit { return BInit{&txctx{params: params}} }
 
-	Inputs  TxInputs
-	Outputs TxOutputs
+type BInit struct{ c *txctx }   // only initial configuration
+type BDraft struct{ c *txctx }  // add inputs/outputs/select
+type BBuilt struct{ c *txctx }  // psbt built (unsigned)
+type BSigned struct{ c *txctx } // psbt signed
 
-	FundAddress string
-	FeeRate     float64
+// error getters (available on all states)
+func (b BInit) Err() error   { return b.c.Err() }
+func (b BDraft) Err() error  { return b.c.Err() }
+func (b BBuilt) Err() error  { return b.c.Err() }
+func (b BSigned) Err() error { return b.c.Err() }
 
-	MsgTx  *wire.MsgTx
-	Packet *psbt.Packet
+// -----------------------------------------------------------------------------
+// BInit: configuration (only here!)
+// -----------------------------------------------------------------------------
+
+func (b BInit) From(addr string) BInit        { b.c.fromAddr = addr; return b }
+func (b BInit) Change(addr string) BInit      { b.c.changeAddr = addr; return b }
+func (b BInit) FeeRate(feeRate float64) BInit { b.c.feeRate = feeRate; return b }
+
+// move into draft by adding first thing (input or output)
+func (b BInit) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) BDraft {
+	b.c.addErr(b.c.Inputs.AddInput(b.c.params, raw, vout, amt, addr))
+	return BDraft{b.c}
+}
+func (b BInit) To(addr string, amt int64) BDraft {
+	b.c.addErr(b.c.Outputs.AddOutputTransfer(b.c.params, addr, amt))
+	return BDraft{b.c}
 }
 
-func NewTxBuilder(params *chaincfg.Params, opts ...BuilderOpt) *TxBuilder {
-	builder := &TxBuilder{
-		Params: params,
-	}
+// -----------------------------------------------------------------------------
+// BDraft: keep adding inputs/outputs or auto-select inputs
+// -----------------------------------------------------------------------------
 
-	for _, opt := range opts {
-		opt(builder)
-	}
-	return builder
+func (b BDraft) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) BDraft {
+	b.c.addErr(b.c.Inputs.AddInput(b.c.params, raw, vout, amt, addr))
+	return b
+}
+func (b BDraft) To(addr string, amt int64) BDraft {
+	b.c.addErr(b.c.Outputs.AddOutputTransfer(b.c.params, addr, amt))
+	return b
 }
 
-func (t *TxBuilder) Build() (*psbt.Packet, error) {
-	if len(t.Inputs) == 0 && len(t.Outputs) == 0 {
-		return nil, fmt.Errorf("PSBT packet must contain at least one input or output")
-	}
+// SelectInputs picks UTXOs to cover current Outputs (fee finalized in funding step).
+func (b BDraft) SelectInputs(utxos []*types.Utxo) BDraft {
+	c := b.c
+	need := int64(c.Outputs.AmountTotal())
 
-	txIns, err := t.Inputs.ToWire()
+	sel, rest, err := SelectUtxo(utxos, need)
 	if err != nil {
-		return nil, err
+		c.addErr(err)
+		return b
 	}
-	outputs, err := t.Outputs.ToWire()
+
+	for _, u := range sel {
+		c.addErr(c.Inputs.AddInput(c.params, u.RawTx, u.Vout, u.Value, c.fromAddr))
+	}
+	c.utxos = rest
+	if c.changeAddr == "" {
+		c.changeAddr = c.fromAddr
+	}
+	return b
+}
+
+// Build: single error boundary
+func (b BDraft) Build() (BBuilt, error) {
+	if err := b.c.Err(); err != nil {
+		return BBuilt{}, err
+	}
+
+	msg := wire.NewMsgTx(wire.TxVersion)
+
+	ins, err := b.c.Inputs.ToWire()
 	if err != nil {
-		return nil, err
+		return BBuilt{}, err
+	}
+	for _, in := range ins {
+		msg.AddTxIn(in)
 	}
 
-	t.MsgTx = wire.NewMsgTx(wire.TxVersion)
-	for _, in := range txIns {
-		t.MsgTx.AddTxIn(in)
+	outs, err := b.c.Outputs.ToWire()
+	if err != nil {
+		return BBuilt{}, err
 	}
-	for _, out := range outputs {
-		t.MsgTx.AddTxOut(out)
+	for _, out := range outs {
+		msg.AddTxOut(out)
 	}
 
-	if t.FundAddress != "" {
-		err = t.FundRawTransaction()
-		if err != nil {
-			return nil, err
+	// finalize fee + add change (may also add more inputs via inputs pointer)
+	if b.c.changeAddr != "" {
+		if err := FundRawTransaction(
+			b.c.params,
+			msg,
+			&b.c.Inputs,
+			b.c.Outputs,
+			b.c.changeAddr,
+			b.c.feeRate,
+			b.c.utxos,
+			b.c.fromAddr,
+			SelectUtxo,
+		); err != nil {
+			return BBuilt{}, err
 		}
 	}
 
-	p, err := psbt.NewFromUnsignedTx(t.MsgTx)
+	pkt, err := psbt.NewFromUnsignedTx(msg)
+	if err != nil {
+		return BBuilt{}, err
+	}
+
+	if err := DecorateTxInputs(pkt, b.c.Inputs); err != nil {
+		return BBuilt{}, err
+	}
+
+	b.c.pkt = pkt
+	return BBuilt{b.c}, nil
+}
+
+// -----------------------------------------------------------------------------
+// BBuilt: unsigned packet helpers
+// -----------------------------------------------------------------------------
+
+func (b BBuilt) Packet() *psbt.Packet { return b.c.pkt }
+
+func (b BBuilt) UnsignedRawTx() ([]byte, error) {
+	if err := b.c.Err(); err != nil {
+		return nil, err
+	}
+	if b.c.pkt == nil || b.c.pkt.UnsignedTx == nil {
+		return nil, fmt.Errorf("no unsigned tx: call Build() first")
+	}
+	var buf bytes.Buffer
+	if err := b.c.pkt.UnsignedTx.Serialize(&buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (b BBuilt) SignWith(sign types.Signer, pubkey []byte) (BSigned, error) {
+	if b.c.pkt == nil {
+		return BSigned{}, fmt.Errorf("packet is nil: call Build() first")
+	}
+	pkt, err := SignTx(b.c.params, b.c.pkt, sign, pubkey)
+	if err != nil {
+		return BSigned{}, err
+	}
+	b.c.pkt = pkt
+	return BSigned{b.c}, nil
+}
+
+// -----------------------------------------------------------------------------
+// BSigned: final raw tx (broadcastable)
+// -----------------------------------------------------------------------------
+
+func (b BSigned) Packet() *psbt.Packet { return b.c.pkt }
+
+func (b BSigned) RawTx() ([]byte, error) {
+	if b.c.pkt == nil {
+		return nil, fmt.Errorf("packet is nil")
+	}
+	finalTx, err := psbt.Extract(b.c.pkt)
 	if err != nil {
 		return nil, err
 	}
-
-	err = t.decorateTxInputs(p)
-	if err != nil {
+	var buf bytes.Buffer
+	if err := finalTx.Serialize(&buf); err != nil {
 		return nil, err
 	}
-
-	return p, nil
-}
-
-func (t *TxBuilder) decorateTxInputs(packet *psbt.Packet) error {
-	for i := range packet.Inputs {
-		txInput := t.Inputs[i]
-
-		switch txInput.AddrType {
-		case types.P2PK, types.P2PKH:
-			addInputInfoNonSegWit(&packet.Inputs[i], txInput)
-		case types.P2WPKH, types.P2WPKH_NESTED:
-			addInputInfoSegWitV0(&packet.Inputs[i], txInput)
-		case types.P2TR:
-			addInputInfoSegWitV1(&packet.Inputs[i], txInput)
-		default:
-			return fmt.Errorf("not support address type %s", txInput.AddrType)
-		}
-
-	}
-	return nil
-}
-
-func addInputInfoNonSegWit(in *psbt.PInput, txInput *TxInput) {
-	in.NonWitnessUtxo = txInput.tx
-
-	// Include the derivation path for each input.
-	// in.Bip32Derivation = []*psbt.Bip32Derivation{
-	// 	derivationInfo,
-	// }
-}
-
-// addInputInfoSegWitV0 adds the UTXO and BIP32 derivation info for a SegWit v0
-// PSBT input (p2wkh, np2wkh) from the given wallet information.
-func addInputInfoSegWitV0(in *psbt.PInput, txInput *TxInput) {
-
-	// As a fix for CVE-2020-14199 we have to always include the full
-	// non-witness UTXO in the PSBT for segwit v0.
-	in.NonWitnessUtxo = txInput.tx
-
-	// To make it more obvious that this is actually a witness output being
-	// spent, we also add the same information as the witness UTXO.
-	in.WitnessUtxo = txInput.prevVout
-	in.SighashType = txscript.SigHashAll
-
-	// Include the derivation path for each input.
-	// in.Bip32Derivation = []*psbt.Bip32Derivation{
-	// 	derivationInfo,
-	// }
-
-	// For nested P2WKH we need to add the redeem script to the input,
-	// otherwise an offline wallet won't be able to sign for it. For normal
-	// P2WKH this will be nil.
-	if txInput.AddrType == types.P2WPKH_NESTED {
-		// TODO : test!!
-		in.RedeemScript = in.WitnessScript
-	}
-}
-
-// addInputInfoSegWitV0 adds the UTXO and BIP32 derivation info for a SegWit v1
-// PSBT input (p2tr) from the given wallet information.
-func addInputInfoSegWitV1(in *psbt.PInput, txInput *TxInput) {
-
-	// For SegWit v1 we only need the witness UTXO information.
-	in.WitnessUtxo = txInput.prevVout
-	in.SighashType = txscript.SigHashDefault
-
-	// Include the derivation path for each input in addition to the
-	// taproot specific info we have below.
-	// in.Bip32Derivation = []*psbt.Bip32Derivation{
-	// 	derivationInfo,
-	// }
-
-	// Include the derivation path for each input.
-	// in.TaprootBip32Derivation = []*psbt.TaprootBip32Derivation{{
-	// 	XOnlyPubKey:          derivationInfo.PubKey[1:],
-	// 	MasterKeyFingerprint: derivationInfo.MasterKeyFingerprint,
-	// 	Bip32Path:            derivationInfo.Bip32Path,
-	// }}
+	return buf.Bytes(), nil
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
@@ -16,66 +18,90 @@ const (
 	WitnessScaleFactor = 4
 )
 
-func (t *TxBuilder) SufficentFunds() bool {
-	inSum, _ := btcutil.NewAmount(0)
-	for _, input := range t.Inputs {
+func SufficientFunds(ins TxInputs, outs TxOutputs) bool {
+	var inSum, outSum btcutil.Amount
+	for _, input := range ins {
 		inSum += input.Amount
 	}
-
-	outSum, _ := btcutil.NewAmount(0)
-	for _, output := range t.Outputs {
+	for _, output := range outs {
 		outSum += output.Amount
 	}
-
-	fund := inSum - outSum
-	return fund >= 0
+	return inSum >= outSum
 }
-
-func (t *TxBuilder) FundRawTransaction() error {
-	fundAddressBTC, err := btcutil.DecodeAddress(t.FundAddress, t.Params)
+func FundRawTransaction(
+	params *chaincfg.Params,
+	msgTx *wire.MsgTx,
+	inputs *TxInputs,
+	outputs TxOutputs,
+	changeAddr string,
+	feeRate float64,
+	utxoPool []*types.Utxo,
+	fromAddr string,
+	selectUtxo func([]*types.Utxo, int64) (selected, rest []*types.Utxo, err error),
+) error {
+	changeBTC, err := btcutil.DecodeAddress(changeAddr, params)
 	if err != nil {
-		return err
+		return fmt.Errorf("decode change address: %w", err)
 	}
 
-	feeAmount, err := EstimateTxFee(t.FeeRate, t.Inputs, t.MsgTx.TxOut, fundAddressBTC)
+	changeScript, err := script.EncodeTransferScript(changeBTC)
 	if err != nil {
-		return err
+		return fmt.Errorf("encode change script: %w", err)
 	}
 
-	// calculate fund amount
-	totalInput := t.Inputs.AmountTotal()
-	totalOutput := t.Outputs.AmountTotal()
-	fund := totalInput - totalOutput - feeAmount
-	if fund < 0 {
-		// fund more utxo
-		selected, _, err := SelectUtxo(t.Utxos, int64(feeAmount))
+	addWireInput := func(raw *wire.MsgTx, vout uint32) error {
+		txid, err := chainhash.NewHashFromStr(raw.TxID())
 		if err != nil {
 			return err
-		} else if len(selected) == 0 {
-			return fmt.Errorf("insufficient balance | total : %v | to amount : %v", totalInput, totalOutput)
 		}
-		for _, utxo := range selected {
-			if err = t.Inputs.AddInput(t.Params, utxo.RawTx, utxo.Vout, utxo.Value, t.FromAddress); err != nil {
-				return err
+		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(txid, vout), nil, nil))
+		return nil
+	}
+
+	userOuts := make([]*wire.TxOut, len(msgTx.TxOut))
+	copy(userOuts, msgTx.TxOut)
+
+	fee1, err := EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
+	if err != nil {
+		return fmt.Errorf("estimate fee: %w", err)
+	}
+	inTotal := inputs.AmountTotal()
+	outTotal := outputs.AmountTotal()
+	fund := inTotal - outTotal - fee1
+
+	for fund < 0 {
+		deficit := -fund
+		selected, rest, selErr := selectUtxo(utxoPool, int64(deficit))
+		if selErr != nil {
+			return fmt.Errorf("select utxo: %w", selErr)
+		}
+		if len(selected) == 0 {
+			return fmt.Errorf("insufficient balance: have=%v, need=%v (fee=%v)",
+				inTotal, outTotal+fee1, fee1)
+		}
+		for _, u := range selected {
+			if err := inputs.AddInput(params, u.RawTx, u.Vout, u.Value, fromAddr); err != nil {
+				return fmt.Errorf("add input: %w", err)
 			}
+			if err := addWireInput(u.RawTx, u.Vout); err != nil {
+				return fmt.Errorf("add txin: %w", err)
+			}
+			inTotal += btcutil.Amount(u.Value)
 		}
+		utxoPool = rest
 
-		// recalculate fund amount
-		feeAmount, err = EstimateTxFee(t.FeeRate, t.Inputs, t.MsgTx.TxOut, fundAddressBTC)
+		fee1, err = EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
 		if err != nil {
-			return err
+			return fmt.Errorf("re-estimate fee: %w", err)
 		}
-		fund = totalInput - totalOutput - feeAmount
+		fund = inTotal - outTotal - fee1
 	}
 
-	// add fund output
 	if fund > 0 {
-		pkScript, err := script.EncodeTransferScript(fundAddressBTC)
-		if err != nil {
-			return err
+		changeOut := wire.NewTxOut(int64(fund), changeScript)
+		if changeOut.Value > 0 {
+			msgTx.AddTxOut(changeOut)
 		}
-		fundTxOut := wire.NewTxOut(int64(fund), pkScript)
-		t.MsgTx.TxOut = append(t.MsgTx.TxOut, fundTxOut)
 	}
 
 	return nil

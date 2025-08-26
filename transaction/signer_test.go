@@ -24,11 +24,14 @@ func TestSignPsbtTx(t *testing.T) {
 	require.NoError(t, err)
 
 	txBuild := NewTxBuilder(params)
-	txBuild.Inputs.AddInput(params, msgTx, 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
-	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
-	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
-	packet, err := txBuild.Build()
+	txBuild.c.Inputs.AddInput(params, msgTx, 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
+	txBuild.c.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
+	txBuild.c.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
+	bready := BDraft{txBuild.c}
+	build, err := bready.Build()
 	require.NoError(t, err)
+	packet := build.Packet()
+	require.NoError(t, build.Err())
 
 	signer, err := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
 	require.NoError(t, err)
@@ -37,7 +40,7 @@ func TestSignPsbtTx(t *testing.T) {
 	rawTx, err := types.EncodePsbtToRawTx(signedPacket)
 	require.NoError(t, err)
 	rawTxString := utils.HexEncode(rawTx)
-	assert.Equal(t, "01000000012258bcdf8563608ffdf86aca3580b0f4830d5b92d3a1cf906c32e6c2f5232c0b010000006a47304402206bdac667fb3d6f1a62e0b0d1123a5caa58d8c0fd95c2a2c8cd091374960a871702204f301e6883866570ce309573e569d6a32a44386af5bf928b5f9e1dcd7e2dd0ed0121022bc0ca1d6aea1c1e523bfcb33f46131bd1a3240aa04f71c34b1a177cfd5ff933ffffffff0208cf0000000000001976a914a2fe215e4789e607401a4bf85358cbbfae13a97e88ac10270000000000001976a914a2fe215e4789e607401a4bf85358cbbfae13a97e88ac00000000", rawTxString)
+	assert.Equal(t, "01000000012258bcdf8563608ffdf86aca3580b0f4830d5b92d3a1cf906c32e6c2f5232c0b010000006b483045022068645e39a0d12590c2128af094c244bea6efab786fe13127c4101247c028458f022100d2b4c8317104e9d40d0e5cdef6058a3b6239460aaca30821ba7f4d6beba0d1f40121031053e9ef0295d334b6bb22e20cc717eb1a16a546f692572c8830b4bc14c13676ffffffff0208cf0000000000001976a914a2fe215e4789e607401a4bf85358cbbfae13a97e88ac10270000000000001976a914a2fe215e4789e607401a4bf85358cbbfae13a97e88ac00000000", rawTxString)
 
 	rawTxMake, err := types.DecodeRawTransaction(rawTxString)
 	require.NoError(t, err)
