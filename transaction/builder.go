@@ -77,17 +77,6 @@ func (b *TxBuilder) FeeRate(feeRate float64) *TxBuilder {
 	return b
 }
 
-// -----------------------------------------------------------------------------
-// transitions (mutating builder)
-// -----------------------------------------------------------------------------
-
-func (b *TxBuilder) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) *TxBuilder {
-	if b.OK() {
-		b.addErr(b.Inputs.AddInput(b.params, raw, vout, amt, addr))
-	}
-	return b
-}
-
 func (b *TxBuilder) To(addr string, amt int64) *TxBuilder {
 	if b.OK() {
 		b.addErr(b.Outputs.AddOutputTransfer(b.params, addr, amt))
@@ -96,16 +85,18 @@ func (b *TxBuilder) To(addr string, amt int64) *TxBuilder {
 }
 
 func (b *TxBuilder) ToMap(balance map[string]int64) *TxBuilder {
-	if b.OK() {
-		for addr, amt := range balance {
-			b.addErr(b.Outputs.AddOutputTransfer(b.params, addr, amt))
-		}
+	for addr, amt := range balance {
+		b.To(addr, amt)
 	}
 	return b
 }
 
-// SelectInputs picks UTXOs to cover Outputs (fee finalized in Build).
-func (b *TxBuilder) SelectInputs(utxos []*types.Utxo) *TxBuilder {
+// -----------------------------------------------------------------------------
+// transitions (mutating builder)
+// -----------------------------------------------------------------------------
+
+// SelectUtxo picks UTXOs to cover Outputs (fee finalized in Build).
+func (b *TxBuilder) SelectUtxo(utxos []*types.Utxo) *TxBuilder {
 	if !b.OK() {
 		return b
 	}

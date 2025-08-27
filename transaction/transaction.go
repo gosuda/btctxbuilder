@@ -23,7 +23,7 @@ func NewTransferTx(
 		From(fromAddress).
 		Change(fromAddress).
 		ToMap(toAddress).
-		SelectInputs(utxos).
+		SelectUtxo(utxos).
 		Build().
 		SignWith(signer, pubkey)
 
