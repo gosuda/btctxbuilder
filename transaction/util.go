@@ -2,35 +2,12 @@ package transaction
 
 import (
 	"bytes"
-	"fmt"
-	"sort"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/gosuda/btctxbuilder/types"
 	"github.com/gosuda/btctxbuilder/utils"
 )
-
-func SelectUtxo(utxos []*types.Utxo, amount int64) (selected []*types.Utxo, unselected []*types.Utxo, err error) {
-	sort.Slice(utxos, func(i, j int) bool {
-		return utxos[i].Value < utxos[j].Value
-	})
-	var idx int
-	var total int64
-	for idx = range utxos {
-		total += utxos[idx].Value
-		if total >= amount {
-			break
-		}
-	}
-	if total < amount {
-		return nil, nil, fmt.Errorf("insufficient balance | total : %v | to amount : %v", total, amount)
-	}
-	selected = utxos[:idx+1]
-	unselected = utxos[idx+1:]
-	return selected, unselected, nil
-}
 
 func DecodePSBT(psbtStr string) (*psbt.Packet, error) {
 	var err error

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gosuda/btctxbuilder/script"
 	"github.com/gosuda/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 const (
@@ -37,7 +38,6 @@ func FundRawTransaction(
 	feeRate float64,
 	utxoPool []*types.Utxo,
 	fromAddr string,
-	selectUtxo func([]*types.Utxo, int64) (selected, rest []*types.Utxo, err error),
 ) error {
 	changeBTC, err := btcutil.DecodeAddress(changeAddr, params)
 	if err != nil {
@@ -71,11 +71,10 @@ func FundRawTransaction(
 
 	for fund < 0 {
 		deficit := -fund
-		selected, rest, selErr := selectUtxo(utxoPool, int64(deficit))
-		if selErr != nil {
-			return fmt.Errorf("select utxo: %w", selErr)
-		}
-		if len(selected) == 0 {
+		selected, rest, ok := utils.SelectUtxo(utxoPool, int(deficit), func(u *types.Utxo) int {
+			return int(u.Value)
+		})
+		if !ok {
 			return fmt.Errorf("insufficient balance: have=%v, need=%v (fee=%v)",
 				inTotal, outTotal+fee1, fee1)
 		}

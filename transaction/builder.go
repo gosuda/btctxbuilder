@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 
 	"github.com/gosuda/btctxbuilder/types"
+	"github.com/gosuda/btctxbuilder/utils"
 )
 
 // -----------------------------------------------------------------------------
@@ -100,18 +101,21 @@ func (b *TxBuilder) SelectUtxo(utxos []*types.Utxo) *TxBuilder {
 	if !b.OK() {
 		return b
 	}
-	need := int64(b.Outputs.AmountTotal())
+	amountTotal := int(b.Outputs.AmountTotal())
 
-	sel, rest, err := SelectUtxo(utxos, need)
-	if err != nil {
-		b.addErr(err)
+	selected, unselected, ok := utils.SelectUtxo(utxos, amountTotal, func(u *types.Utxo) int {
+		return int(u.Value)
+	})
+	if !ok {
+		b.addErr(fmt.Errorf("insufficient balance | need : %v", amountTotal))
 		return b
 	}
 
-	for _, u := range sel {
+	for _, u := range selected {
 		b.addErr(b.Inputs.AddInput(b.params, u.RawTx, u.Vout, u.Value, b.fromAddr))
 	}
-	b.utxos = rest
+	b.utxos = unselected
+
 	if b.changeAddr == "" {
 		b.changeAddr = b.fromAddr
 	}
@@ -158,7 +162,6 @@ func (b *TxBuilder) Build() *TxBuilder {
 			b.feeRate,
 			b.utxos,
 			b.fromAddr,
-			SelectUtxo,
 		); err != nil {
 			b.addErr(err)
 			return b
