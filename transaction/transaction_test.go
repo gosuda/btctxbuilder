@@ -130,7 +130,7 @@ func TestTransfer(t *testing.T) {
 		signer, err := types.NewECDSASigner(test.fromPrivKey)
 		require.NoError(t, err)
 		params := types.GetParams(test.net)
-		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, test.fromAddress, signer.Sign, signer.PubKey(), 0.0001)
+		psbtPacket, err := NewTransferTx(params, test.utxos, test.fromAddress, map[string]int64{test.toAddress: test.toAmount}, signer.Sign, signer.PubKey(), 0.0001)
 		require.NoError(t, err)
 
 		// verify tx

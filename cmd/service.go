@@ -32,7 +32,7 @@ func (m model) transfer() tea.Msg {
 		return errorMsg(fmt.Sprintf("Failed to decode private key: %s", err))
 	}
 
-	psbtPacket, err := transaction.NewTransferTx(params, utxos, m.from, toMap, m.from, signer.Sign, signer.PubKey(), fee)
+	psbtPacket, err := transaction.NewTransferTx(params, utxos, m.from, toMap, signer.Sign, signer.PubKey(), fee)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Failed to create transaction: %s", err))
 	}

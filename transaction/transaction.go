@@ -1,8 +1,6 @@
 package transaction
 
 import (
-	"fmt"
-
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 
@@ -15,22 +13,15 @@ func NewTransferTx(
 	utxos []*types.Utxo,
 	fromAddress string,
 	toAddress map[string]int64,
-	fundAddress string,
 	signer types.Signer,
 	pubkey []byte,
 	fee float64,
 ) (*psbt.Packet, error) {
-	if len(toAddress) == 0 {
-		return nil, fmt.Errorf("no outputs: toAddress is empty")
-	}
-	if fundAddress == "" {
-		fundAddress = fromAddress
-	}
 
 	builder := NewTxBuilder(params).
 		FeeRate(fee).
 		From(fromAddress).
-		Change(fundAddress).
+		Change(fromAddress).
 		ToMap(toAddress).
 		SelectInputs(utxos).
 		Build().
