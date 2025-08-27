@@ -24,14 +24,12 @@ func TestSignPsbtTx(t *testing.T) {
 	require.NoError(t, err)
 
 	txBuild := NewTxBuilder(params)
-	txBuild.c.Inputs.AddInput(params, msgTx, 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
-	txBuild.c.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
-	txBuild.c.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
-	bready := BDraft{txBuild.c}
-	build, err := bready.Build()
-	require.NoError(t, err)
-	packet := build.Packet()
+	txBuild.Inputs.AddInput(params, msgTx, 1, 0, "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp")
+	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 53000)
+	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
+	build := txBuild.Build()
 	require.NoError(t, build.Err())
+	packet := build.Packet()
 
 	signer, err := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
 	require.NoError(t, err)

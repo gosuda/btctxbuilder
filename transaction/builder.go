@@ -13,10 +13,10 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// context
+// TxBuilder
 // -----------------------------------------------------------------------------
 
-type txctx struct {
+type TxBuilder struct {
 	params     *chaincfg.Params
 	feeRate    float64
 	fromAddr   string
@@ -26,193 +26,195 @@ type txctx struct {
 	Outputs    TxOutputs
 	pkt        *psbt.Packet
 
-	errs []error // accumulate all errors
+	errs []error
 }
 
-func (c *txctx) addErr(err error) {
+// -----------------------------------------------------------------------------
+// ctor / error handling
+// -----------------------------------------------------------------------------
+
+func NewTxBuilder(params *chaincfg.Params) *TxBuilder {
+	return &TxBuilder{params: params}
+}
+
+func (b *TxBuilder) addErr(err error) {
 	if err != nil {
-		c.errs = append(c.errs, err)
+		b.errs = append(b.errs, err)
 	}
 }
 
-func (c *txctx) Err() error {
-	if len(c.errs) == 0 {
+func (b *TxBuilder) Err() error {
+	if len(b.errs) == 0 {
 		return nil
 	}
-	return errors.Join(c.errs...)
+	return errors.Join(b.errs...)
 }
 
-// -----------------------------------------------------------------------------
-// states
-// -----------------------------------------------------------------------------
-
-func NewTxBuilder(params *chaincfg.Params) BInit { return BInit{&txctx{params: params}} }
-
-type BInit struct{ c *txctx }   // only initial configuration
-type BDraft struct{ c *txctx }  // add inputs/outputs/select
-type BBuilt struct{ c *txctx }  // psbt built (unsigned)
-type BSigned struct{ c *txctx } // psbt signed
-
-// error getters (available on all states)
-func (b BInit) Err() error   { return b.c.Err() }
-func (b BDraft) Err() error  { return b.c.Err() }
-func (b BBuilt) Err() error  { return b.c.Err() }
-func (b BSigned) Err() error { return b.c.Err() }
+func (b *TxBuilder) OK() bool { return b.Err() == nil }
 
 // -----------------------------------------------------------------------------
-// BInit: configuration (only here!)
+// setters
 // -----------------------------------------------------------------------------
 
-func (b BInit) From(addr string) BInit        { b.c.fromAddr = addr; return b }
-func (b BInit) Change(addr string) BInit      { b.c.changeAddr = addr; return b }
-func (b BInit) FeeRate(feeRate float64) BInit { b.c.feeRate = feeRate; return b }
-
-// move into draft by adding first thing (input or output)
-func (b BInit) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) BDraft {
-	b.c.addErr(b.c.Inputs.AddInput(b.c.params, raw, vout, amt, addr))
-	return BDraft{b.c}
-}
-func (b BInit) To(addr string, amt int64) BDraft {
-	b.c.addErr(b.c.Outputs.AddOutputTransfer(b.c.params, addr, amt))
-	return BDraft{b.c}
-}
-
-// -----------------------------------------------------------------------------
-// BDraft: keep adding inputs/outputs or auto-select inputs
-// -----------------------------------------------------------------------------
-
-func (b BDraft) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) BDraft {
-	b.c.addErr(b.c.Inputs.AddInput(b.c.params, raw, vout, amt, addr))
-	return b
-}
-func (b BDraft) To(addr string, amt int64) BDraft {
-	b.c.addErr(b.c.Outputs.AddOutputTransfer(b.c.params, addr, amt))
+func (b *TxBuilder) From(addr string) *TxBuilder {
+	if b.OK() {
+		b.fromAddr = addr
+	}
 	return b
 }
 
-// SelectInputs picks UTXOs to cover current Outputs (fee finalized in funding step).
-func (b BDraft) SelectInputs(utxos []*types.Utxo) BDraft {
-	c := b.c
-	need := int64(c.Outputs.AmountTotal())
+func (b *TxBuilder) Change(addr string) *TxBuilder {
+	if b.OK() {
+		b.changeAddr = addr
+	}
+	return b
+}
+
+func (b *TxBuilder) FeeRate(feeRate float64) *TxBuilder {
+	if b.OK() {
+		b.feeRate = feeRate
+	}
+	return b
+}
+
+// -----------------------------------------------------------------------------
+// transitions (mutating builder)
+// -----------------------------------------------------------------------------
+
+func (b *TxBuilder) AddInput(raw *wire.MsgTx, vout uint32, amt int64, addr string) *TxBuilder {
+	if b.OK() {
+		b.addErr(b.Inputs.AddInput(b.params, raw, vout, amt, addr))
+	}
+	return b
+}
+
+func (b *TxBuilder) To(addr string, amt int64) *TxBuilder {
+	if b.OK() {
+		b.addErr(b.Outputs.AddOutputTransfer(b.params, addr, amt))
+	}
+	return b
+}
+
+func (b *TxBuilder) ToMap(balance map[string]int64) *TxBuilder {
+	if b.OK() {
+		for addr, amt := range balance {
+			b.addErr(b.Outputs.AddOutputTransfer(b.params, addr, amt))
+		}
+	}
+	return b
+}
+
+// SelectInputs picks UTXOs to cover Outputs (fee finalized in Build).
+func (b *TxBuilder) SelectInputs(utxos []*types.Utxo) *TxBuilder {
+	if !b.OK() {
+		return b
+	}
+	need := int64(b.Outputs.AmountTotal())
 
 	sel, rest, err := SelectUtxo(utxos, need)
 	if err != nil {
-		c.addErr(err)
+		b.addErr(err)
 		return b
 	}
 
 	for _, u := range sel {
-		c.addErr(c.Inputs.AddInput(c.params, u.RawTx, u.Vout, u.Value, c.fromAddr))
+		b.addErr(b.Inputs.AddInput(b.params, u.RawTx, u.Vout, u.Value, b.fromAddr))
 	}
-	c.utxos = rest
-	if c.changeAddr == "" {
-		c.changeAddr = c.fromAddr
+	b.utxos = rest
+	if b.changeAddr == "" {
+		b.changeAddr = b.fromAddr
 	}
 	return b
 }
 
-// Build: single error boundary
-func (b BDraft) Build() (BBuilt, error) {
-	if err := b.c.Err(); err != nil {
-		return BBuilt{}, err
+// -----------------------------------------------------------------------------
+// build / sign
+// -----------------------------------------------------------------------------
+
+func (b *TxBuilder) Build() *TxBuilder {
+	if !b.OK() {
+		return b
 	}
 
 	msg := wire.NewMsgTx(wire.TxVersion)
 
-	ins, err := b.c.Inputs.ToWire()
+	ins, err := b.Inputs.ToWire()
 	if err != nil {
-		return BBuilt{}, err
+		b.addErr(err)
+		return b
 	}
 	for _, in := range ins {
 		msg.AddTxIn(in)
 	}
 
-	outs, err := b.c.Outputs.ToWire()
+	outs, err := b.Outputs.ToWire()
 	if err != nil {
-		return BBuilt{}, err
+		b.addErr(err)
+		return b
 	}
 	for _, out := range outs {
 		msg.AddTxOut(out)
 	}
 
-	// finalize fee + add change (may also add more inputs via inputs pointer)
-	if b.c.changeAddr != "" {
+	// finalize fee + add change
+	if b.changeAddr != "" {
 		if err := FundRawTransaction(
-			b.c.params,
+			b.params,
 			msg,
-			&b.c.Inputs,
-			b.c.Outputs,
-			b.c.changeAddr,
-			b.c.feeRate,
-			b.c.utxos,
-			b.c.fromAddr,
+			&b.Inputs,
+			b.Outputs,
+			b.changeAddr,
+			b.feeRate,
+			b.utxos,
+			b.fromAddr,
 			SelectUtxo,
 		); err != nil {
-			return BBuilt{}, err
+			b.addErr(err)
+			return b
 		}
 	}
 
 	pkt, err := psbt.NewFromUnsignedTx(msg)
 	if err != nil {
-		return BBuilt{}, err
+		b.addErr(err)
+		return b
+	}
+	if err := DecorateTxInputs(pkt, b.Inputs); err != nil {
+		b.addErr(err)
+		return b
 	}
 
-	if err := DecorateTxInputs(pkt, b.c.Inputs); err != nil {
-		return BBuilt{}, err
-	}
-
-	b.c.pkt = pkt
-	return BBuilt{b.c}, nil
+	b.pkt = pkt
+	return b
 }
 
-// -----------------------------------------------------------------------------
-// BBuilt: unsigned packet helpers
-// -----------------------------------------------------------------------------
+func (b *TxBuilder) SignWith(sign types.Signer, pubkey []byte) *TxBuilder {
+	if !b.OK() {
+		return b
+	}
+	if sign == nil {
+		return b
+	}
+	pkt, err := SignTx(b.params, b.pkt, sign, pubkey)
+	if err != nil {
+		b.addErr(err)
+		return b
+	}
+	b.pkt = pkt
+	return b
+}
 
-func (b BBuilt) Packet() *psbt.Packet { return b.c.pkt }
+func (b *TxBuilder) Packet() *psbt.Packet { return b.pkt }
 
-func (b BBuilt) UnsignedRawTx() ([]byte, error) {
-	if err := b.c.Err(); err != nil {
+func (b *TxBuilder) RawTx() ([]byte, error) {
+	if err := b.Err(); err != nil {
 		return nil, err
 	}
-	if b.c.pkt == nil || b.c.pkt.UnsignedTx == nil {
+	if b.pkt == nil || b.pkt.UnsignedTx == nil {
 		return nil, fmt.Errorf("no unsigned tx: call Build() first")
 	}
 	var buf bytes.Buffer
-	if err := b.c.pkt.UnsignedTx.Serialize(&buf); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (b BBuilt) SignWith(sign types.Signer, pubkey []byte) (BSigned, error) {
-	if b.c.pkt == nil {
-		return BSigned{}, fmt.Errorf("packet is nil: call Build() first")
-	}
-	pkt, err := SignTx(b.c.params, b.c.pkt, sign, pubkey)
-	if err != nil {
-		return BSigned{}, err
-	}
-	b.c.pkt = pkt
-	return BSigned{b.c}, nil
-}
-
-// -----------------------------------------------------------------------------
-// BSigned: final raw tx (broadcastable)
-// -----------------------------------------------------------------------------
-
-func (b BSigned) Packet() *psbt.Packet { return b.c.pkt }
-
-func (b BSigned) RawTx() ([]byte, error) {
-	if b.c.pkt == nil {
-		return nil, fmt.Errorf("packet is nil")
-	}
-	finalTx, err := psbt.Extract(b.c.pkt)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	if err := finalTx.Serialize(&buf); err != nil {
+	if err := b.pkt.UnsignedTx.Serialize(&buf); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
