@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -207,9 +206,5 @@ func (b *TxBuilder) RawTx() ([]byte, error) {
 	if b.pkt == nil || b.pkt.UnsignedTx == nil {
 		return nil, fmt.Errorf("no unsigned tx: call Build() first")
 	}
-	var buf bytes.Buffer
-	if err := b.pkt.UnsignedTx.Serialize(&buf); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return types.EncodePsbtToRawTx(b.pkt)
 }

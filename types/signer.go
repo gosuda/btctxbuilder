@@ -13,31 +13,33 @@ import (
 
 type Signer func(msgHash []byte) (signature []byte, err error)
 
+// ECDSASigner wraps a secp256k1 private key for legacy/ECDSA signing.
 type ECDSASigner struct {
 	privkey *btcec.PrivateKey
 }
 
+// NewECDSASigner creates an ECDSA signer.
+// If privkeyHex is empty, a new random private key will be generated.
 func NewECDSASigner(privkeyHex string) (*ECDSASigner, error) {
-	var privkey *btcec.PrivateKey
-	var err error
+	var priv *btcec.PrivateKey
 	if privkeyHex == "" {
-		privkey, err = btcec.NewPrivateKey()
-	} else {
-		privkeyRaw, err := hex.DecodeString(privkeyHex)
+		p, err := btcec.NewPrivateKey()
 		if err != nil {
 			return nil, err
 		}
-		privkey, _ = btcec.PrivKeyFromBytes(privkeyRaw)
+		priv = p
+	} else {
+		raw, err := hex.DecodeString(privkeyHex)
+		if err != nil {
+			return nil, err
+		}
+		p, _ := btcec.PrivKeyFromBytes(raw)
+		priv = p
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &ECDSASigner{
-		privkey: privkey,
-	}, nil
+	return &ECDSASigner{privkey: priv}, nil
 }
 
+// Sign returns a DER-encoded ECDSA signature for the given 32-byte hash.
 func (r *ECDSASigner) Sign(msgHash []byte) ([]byte, error) {
 	signature, err := r.privkey.ToECDSA().Sign(rand.Reader, msgHash, nil)
 	if err != nil {
@@ -46,10 +48,19 @@ func (r *ECDSASigner) Sign(msgHash []byte) ([]byte, error) {
 	return signature, nil
 }
 
-func (r *ECDSASigner) PubKey() []byte {
-	return r.privkey.PubKey().SerializeCompressed()
+// PrivateKeyHex returns the private key as a hex string (32 bytes).
+func (s *ECDSASigner) PrivateKey() []byte {
+	return s.privkey.Serialize()
 }
 
+// PubKeyCompressed returns the 33-byte compressed secp256k1 public key.
+func (s *ECDSASigner) PubKey() []byte {
+	return s.privkey.PubKey().SerializeCompressed()
+}
+
+// SchnorrSigner wraps a (already-tweaked or freshly-generated) BIP-340 private key.
+// If you need Taproot internal&merkle tweaking, this constructor handles the common
+// "no script path" tweak (merkleRoot=nil) when tweakedPrivkeyHex is empty.
 type SchnorrSigner struct {
 	privkey *btcec.PrivateKey
 }
@@ -103,13 +114,13 @@ func (s *SchnorrSigner) Sign(msgHash []byte) ([]byte, error) {
 }
 
 // XOnlyPubKey returns the 32-byte x-only internal key for Taproot.
-func (s *SchnorrSigner) XOnlyPubKey() []byte {
-	return schnorr.SerializePubKey(s.privkey.PubKey()) // 32 bytes (x-only)
+func (s *SchnorrSigner) PrivKey() []byte {
+	return s.privkey.Serialize()
 }
 
-// Normal compress pubkey
-func (s *SchnorrSigner) PubKeyCompressed() []byte {
-	return s.privkey.PubKey().SerializeCompressed() // 33 bytes
+// XOnlyPubKey returns the 32-byte x-only internal key for Taproot.
+func (s *SchnorrSigner) PubKey() []byte {
+	return schnorr.SerializePubKey(s.privkey.PubKey()) // 32 bytes (x-only)
 }
 
 func evenizePriv(priv *btcec.PrivateKey) *btcec.PrivateKey {
