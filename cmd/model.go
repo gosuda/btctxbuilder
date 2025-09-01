@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/gosuda/btctxbuilder/client"
 	"github.com/gosuda/btctxbuilder/types"
 )
@@ -22,7 +23,17 @@ type model struct {
 	errorMsg    string
 	inputBuffer string
 
-	netList list.Model
+	netList      list.Model // step 0
+	actionList   list.Model // step 1
+	addrTypeList list.Model // step 1-0 (newAddress)
+	action       string     // "newAddress" | "sendTransaction"
+
+	// result
+	resultAddr    string
+	resultPubHex  string
+	resultPrivHex string
+	banner        string
+	bannerKind    string
 }
 
 type choiceItem struct{ title, desc string }
@@ -51,7 +62,9 @@ func (d simpleDelegate) Render(w io.Writer, m list.Model, idx int, it list.Item)
 type errorMsg string
 type resultMsg struct{ txid string }
 
-func initialModel() model {
+/* ---------- builders ---------- */
+
+func buildNetList() list.Model {
 	items := []list.Item{
 		choiceItem{"btc", "Bitcoin mainnet"},
 		choiceItem{"btc-testnet3", "Legacy testnet3"},
@@ -59,14 +72,55 @@ func initialModel() model {
 		choiceItem{"btc-signet", "Signet"},
 	}
 	l := list.New(items, simpleDelegate{}, 24, 8)
-	l.Title = ""
+	l.Title = "Select Network"
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetShowPagination(false)
 	l.FilterInput.Focus()
+	return l
+}
 
-	return model{step: 0, netList: l}
+func buildActionList() list.Model {
+	items := []list.Item{
+		choiceItem{"newAddress", "Generate a new address"},
+		choiceItem{"sendTransaction", "Build & send a transaction"},
+	}
+	l := list.New(items, simpleDelegate{}, 24, 8)
+	l.Title = "Select Action"
+	l.SetFilteringEnabled(false)
+	l.SetShowHelp(false)
+	l.SetShowStatusBar(false)
+	l.SetShowPagination(false)
+	return l
+}
+
+func buildAddrTypeList() list.Model {
+	items := []list.Item{
+		choiceItem{string(types.P2PK), "Pay-to-PubKey (not recommended)"},
+		choiceItem{string(types.P2PKH), "Pay-to-PubKey-Hash"},
+		choiceItem{string(types.P2WPKH), "Bech32 v0 P2WPKH"},
+		choiceItem{string(types.P2WPKH_NESTED), "P2SH-P2WPKH (nested segwit)"},
+		choiceItem{string(types.P2TR), "Taproot (BIP-340, x-only)"},
+	}
+	l := list.New(items, simpleDelegate{}, 24, 8)
+	l.Title = "Select Address Type"
+	l.SetFilteringEnabled(false)
+	l.SetShowHelp(false)
+	l.SetShowStatusBar(false)
+	l.SetShowPagination(false)
+	return l
+}
+
+/* ---------- initial model ---------- */
+
+func initialModel() model {
+	return model{
+		step:         0,
+		netList:      buildNetList(),
+		actionList:   buildActionList(),
+		addrTypeList: buildAddrTypeList(),
+	}
 }
 
 func (m model) Init() tea.Cmd { return nil }
@@ -81,10 +135,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if m.step == 0 {
+		switch m.step {
+		case 0:
 			return m.updateNetworkSelect(x)
+		case 1:
+			return m.updateActionSelect(x)
+		case 10:
+			return m.updateAddrTypeSelect(x)
+		case 11:
+			if s := x.String(); s == "enter" || s == "b" {
+				m.step = 1
+				return m, nil
+			}
+			return m, nil
+		default:
+			return m.updateKeyInput(x)
 		}
-		return m.updateKeyInput(x)
 
 	case errorMsg:
 		m.errorMsg = string(x)
@@ -96,15 +162,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if m.step == 0 {
+	switch m.step {
+	case 0:
 		var cmd tea.Cmd
 		m.netList, cmd = m.netList.Update(msg)
+		return m, cmd
+	case 1:
+		var cmd tea.Cmd
+		m.actionList, cmd = m.actionList.Update(msg)
+		return m, cmd
+	case 10:
+		var cmd tea.Cmd
+		m.addrTypeList, cmd = m.addrTypeList.Update(msg)
 		return m, cmd
 	}
 	return m, nil
 }
 
-/* ---------- step==0: network select ---------- */
+/* ---------- step 0: network select ---------- */
 
 func (m model) updateNetworkSelect(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.Type {
@@ -122,7 +197,41 @@ func (m model) updateNetworkSelect(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-/* ---------- step>=1: text input ---------- */
+/* ---------- step 1: action select ---------- */
+
+func (m model) updateActionSelect(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.Type {
+	case tea.KeyEnter:
+		if it := m.actionList.SelectedItem(); it != nil {
+			act := it.(choiceItem).title
+			return m.setAction(act)
+		}
+		return m, nil
+	default:
+		var cmd tea.Cmd
+		m.actionList, cmd = m.actionList.Update(k)
+		return m, cmd
+	}
+}
+
+/* ---------- step 10: addr type select (newAddress) ---------- */
+
+func (m model) updateAddrTypeSelect(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.Type {
+	case tea.KeyEnter:
+		if it := m.addrTypeList.SelectedItem(); it != nil {
+			typ := it.(choiceItem).title
+			return m.generateNewAddress(typ)
+		}
+		return m, nil
+	default:
+		var cmd tea.Cmd
+		m.addrTypeList, cmd = m.addrTypeList.Update(k)
+		return m, cmd
+	}
+}
+
+/* ---------- step>=2: sendTransaction text input ---------- */
 
 func (m model) updateKeyInput(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.Type {
@@ -144,18 +253,19 @@ func (m model) updateKeyInput(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) handleStep(input string) (model, tea.Cmd) {
 	switch m.step {
-	case 1:
-		return m.setFromAddress(input)
+	// sendTransaction steps
 	case 2:
-		return m.addRecipient(input)
+		return m.setFromAddress(input)
 	case 3:
+		return m.addRecipient(input)
+	case 4:
 		m.setPrivateKey(input)
 		return m, m.transfer
 	}
 	return m, nil
 }
 
-/* ---------- business actions ---------- */
+/* ---------- actions ---------- */
 
 func (m model) setNetwork(input string) (model, tea.Cmd) {
 	client, err := client.NewClient(types.Network(input))
@@ -168,12 +278,27 @@ func (m model) setNetwork(input string) (model, tea.Cmd) {
 	return m, nil
 }
 
+func (m model) setAction(act string) (model, tea.Cmd) {
+	m.action = act
+	switch act {
+	case "newAddress":
+		m.step = 10
+	case "sendTransaction":
+		m.step = 2
+	default:
+		return m, returnError("Unknown action")
+	}
+	return m, nil
+}
+
+/* ---------- sendTransaction helpers ---------- */
+
 func (m model) setFromAddress(input string) (model, tea.Cmd) {
 	if input == "" {
 		return m, returnError("From address cannot be empty.")
 	}
 	m.from = input
-	m.step = 2
+	m.step = 3
 	return m, nil
 }
 
@@ -182,7 +307,7 @@ func (m model) addRecipient(input string) (model, tea.Cmd) {
 		if len(m.toList) == 0 {
 			return m, returnError("At least one recipient is required.")
 		}
-		m.step = 3
+		m.step = 4
 		return m, nil
 	}
 	var addr string
