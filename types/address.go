@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -63,11 +62,7 @@ func PubKeyToAddr(publicKey []byte, addrType AddrType, params *chaincfg.Params) 
 		}
 		return addr.EncodeAddress(), nil
 	case P2TR:
-		internalKey, err := btcec.ParsePubKey(publicKey)
-		if err != nil {
-			return "", err
-		}
-		addr, err := btcutil.NewAddressTaproot(txscript.ComputeTaprootKeyNoScript(internalKey).SerializeCompressed()[1:], params)
+		addr, err := btcutil.NewAddressTaproot(publicKey, params)
 		if err != nil {
 			return "", err
 		}
