@@ -186,6 +186,7 @@ func (b *TxBuilder) SignWith(sign types.Signer, pubkey []byte) *TxBuilder {
 		return b
 	}
 	if sign == nil {
+		b.addErr(fmt.Errorf("no signer provided"))
 		return b
 	}
 	pkt, err := SignTx(b.params, b.pkt, sign, pubkey)
