@@ -15,20 +15,6 @@ import (
 	"github.com/gosuda/btctxbuilder/utils"
 )
 
-const (
-	WitnessScaleFactor = 4
-)
-
-func SufficientFunds(ins TxInputs, outs TxOutputs) bool {
-	var inSum, outSum btcutil.Amount
-	for _, input := range ins {
-		inSum += input.Amount
-	}
-	for _, output := range outs {
-		outSum += output.Amount
-	}
-	return inSum >= outSum
-}
 func FundRawTransaction(
 	params *chaincfg.Params,
 	msgTx *wire.MsgTx,
@@ -61,13 +47,13 @@ func FundRawTransaction(
 	userOuts := make([]*wire.TxOut, len(msgTx.TxOut))
 	copy(userOuts, msgTx.TxOut)
 
-	fee1, err := EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
+	fee, err := EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
 	if err != nil {
 		return fmt.Errorf("estimate fee: %w", err)
 	}
 	inTotal := inputs.AmountTotal()
 	outTotal := outputs.AmountTotal()
-	fund := inTotal - outTotal - fee1
+	fund := inTotal - outTotal - fee
 
 	for fund < 0 {
 		deficit := -fund
@@ -76,7 +62,7 @@ func FundRawTransaction(
 		})
 		if !ok {
 			return fmt.Errorf("insufficient balance: have=%v, need=%v (fee=%v)",
-				inTotal, outTotal+fee1, fee1)
+				inTotal, outTotal+fee, fee)
 		}
 		for _, u := range selected {
 			if err := inputs.AddInput(params, u.RawTx, u.Vout, u.Value, fromAddr); err != nil {
@@ -89,11 +75,11 @@ func FundRawTransaction(
 		}
 		utxoPool = rest
 
-		fee1, err = EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
+		fee, err = EstimateTxFee(feeRate, *inputs, userOuts, changeBTC)
 		if err != nil {
 			return fmt.Errorf("re-estimate fee: %w", err)
 		}
-		fund = inTotal - outTotal - fee1
+		fund = inTotal - outTotal - fee
 	}
 
 	if fund > 0 {

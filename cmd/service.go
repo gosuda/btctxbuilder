@@ -38,7 +38,7 @@ func (m model) generateNewAddress(typ string) (model, tea.Cmd) {
 	m.resultPubHex = fmt.Sprintf("%s", pubHex)
 	m.resultPrivHex = fmt.Sprintf("%s", privHex)
 	m.bannerKind = "success"
-	m.banner = fmt.Sprintf("New %s address generated.\n⚠️  WARNING: This data is NOT stored by the app. Please copy and store it in a secure place!", at)
+	m.banner = fmt.Sprintf("New %s address generated.\n⚠️ WARNING: This data is NOT stored by the app. Please copy and store it in a secure place!", at)
 	m.step = 11
 	return m, nil
 }
