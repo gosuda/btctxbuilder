@@ -198,7 +198,15 @@ func (b *TxBuilder) SignWith(sign types.Signer, pubkey []byte) *TxBuilder {
 	return b
 }
 
-func (b *TxBuilder) Packet() *psbt.Packet { return b.pkt }
+func (b *TxBuilder) Packet() (*psbt.Packet, error) {
+	if err := b.Err(); err != nil {
+		return nil, err
+	}
+	if b.pkt == nil {
+		return nil, fmt.Errorf("no packet: call Build() first")
+	}
+	return b.pkt, nil
+}
 
 func (b *TxBuilder) RawTx() ([]byte, error) {
 	if err := b.Err(); err != nil {

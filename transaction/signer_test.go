@@ -29,7 +29,8 @@ func TestSignPsbtTx(t *testing.T) {
 	txBuild.Outputs.AddOutputTransfer(c.GetParams(), "mvNnCR7EJS4aUReLEw2sL2ZtTZh8CAP8Gp", 10000)
 	build := txBuild.Build()
 	require.NoError(t, build.Err())
-	packet := build.Packet()
+	packet, err := build.Packet()
+	require.NoError(t, err)
 
 	signer, err := types.NewECDSASigner("1790962db820729606cd7b255ace1ac5ebb129ac8e9b2d8534d022194ab25b37")
 	require.NoError(t, err)
