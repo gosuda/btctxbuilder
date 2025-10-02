@@ -39,7 +39,7 @@ func (m model) View() string {
 			"",
 			labelStyle.Render("SELECT THE NETWORK"),
 			renderNetList(m),
-			hintStyle.Render("Use ↑/↓ or mouse to move, Enter to select, q to quit"),
+			hintStyle.Render("Use ↑/↓, Enter to select, ctrl+c to quit"),
 			divider,
 		)
 	case 1:
@@ -48,7 +48,7 @@ func (m model) View() string {
 			"",
 			labelStyle.Render("SELECT THE ACTION"),
 			renderActionList(m),
-			hintStyle.Render("Use ↑/↓, Enter to select"),
+			hintStyle.Render("Use ↑/↓, Enter to select, ctrl+c to quit"),
 			divider,
 		)
 	case 10:
@@ -57,7 +57,7 @@ func (m model) View() string {
 			"",
 			labelStyle.Render("SELECT ADDRESS TYPE (for newAddress)"),
 			renderAddrTypeList(m),
-			hintStyle.Render("Use ↑/↓, Enter to generate"),
+			hintStyle.Render("Use ↑/↓, Enter to generate, ctrl+c to quit"),
 			divider,
 		)
 	case 11:
@@ -68,7 +68,7 @@ func (m model) View() string {
 			"",
 			labelStyle.Render("RESULT (newAddress)"),
 			renderResultPanel(m),
-			hintStyle.Render("Press Enter or 'b' to go back • 'q' to quit"),
+			hintStyle.Render("Press Enter to go back, ctrl+c to quit"),
 		)
 	default:
 		content = lipgloss.JoinVertical(lipgloss.Left,
@@ -163,7 +163,7 @@ func renderInput(m model) string {
 		"",
 		inputLine,
 		preview,
-		lipgloss.NewStyle().Italic(true).Render("Type input and press Enter ⏎"),
+		lipgloss.NewStyle().Italic(true).Render("Type input and press Enter ⏎, ctrl+c to quit"),
 		"",
 		errorView,
 	)
