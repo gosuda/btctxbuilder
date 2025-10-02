@@ -1,6 +1,11 @@
 # btctxbuilder
 A Bitcoin toolkit with your own keys, independent of Wallets.
 
+## Quick Start
+```bash
+make run
+```
+
 ## Features
 - Generate addresses
 - Build and sign transactions
