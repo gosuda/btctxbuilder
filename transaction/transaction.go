@@ -14,8 +14,7 @@ func BroadcastTx(
 	client *client.Client,
 	fromAddress string,
 	toAddress map[string]int64,
-	signer types.Signer,
-	pubkey []byte,
+	privkeyHex string,
 ) (txid string, err error) {
 	params := client.GetParams()
 	utxos, err := client.GetUTXOWithRawTx(fromAddress)
@@ -27,14 +26,18 @@ func BroadcastTx(
 		return "", fmt.Errorf("Failed to fetch fee estimate: %s", err)
 	}
 	fee := max(0.00001, feeEstimate["6"])
+	signer, err := types.NewECDSASigner(privkeyHex)
+	if err != nil {
+		return "", err
+	}
 
 	rawTx, err := NewTransferTx(
 		params,
 		utxos,
 		fromAddress,
 		toAddress,
-		signer,
-		pubkey,
+		signer.Sign,
+		signer.PubKey(),
 		fee,
 	)
 	if err != nil {

@@ -49,12 +49,7 @@ func (m model) transfer() tea.Msg {
 		toMap[m.toList[i]] = m.amountList[i]
 	}
 
-	signer, err := types.NewECDSASigner(m.privateKey)
-	if err != nil {
-		return errorMsg(fmt.Sprintf("Failed to decode private key: %s", err))
-	}
-
-	txid, err := transaction.BroadcastTx(m.client, m.from, toMap, signer.Sign, signer.PubKey())
+	txid, err := transaction.BroadcastTx(m.client, m.from, toMap, m.privateKey)
 	if err != nil {
 		return errorMsg(err.Error())
 	}
